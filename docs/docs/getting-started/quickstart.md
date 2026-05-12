@@ -4,7 +4,7 @@
 
 The very first time clipboarder opens, you'll see an orange banner across the top:
 
-![Permission banner](../assets/screenshots/permission-banner.png)
+![Permission banner](../assets/screenshots/permission-banner_v2.png)
 
 
 Click **Open Settings**. macOS will jump straight to *System Settings → Privacy & Security → Accessibility*. Toggle `clipboarder` on (or click `+` and add it from `/Applications`).
