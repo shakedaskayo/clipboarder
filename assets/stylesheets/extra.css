@@ -1,0 +1,83 @@
+:root {
+  --md-primary-fg-color:        #7c8cff;
+  --md-primary-fg-color--light: #97a6ff;
+  --md-primary-fg-color--dark:  #5b6bd9;
+  --md-accent-fg-color:         #7c8cff;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #15151a;
+  --md-default-bg-color--light: #1c1c22;
+  --md-default-bg-color--dark: #0f0f14;
+}
+
+.md-typeset .clipboarder-hero {
+  text-align: center;
+  padding: 2.5rem 1rem 1rem;
+}
+
+.md-typeset .clipboarder-hero img {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 1rem;
+  display: block;
+  filter: drop-shadow(0 8px 24px rgba(124, 140, 255, 0.30));
+}
+
+.md-typeset .clipboarder-hero h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
+  background: linear-gradient(135deg, #7c8cff 0%, #b794f4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.05;
+}
+
+.md-typeset .clipboarder-hero .tagline {
+  font-size: 1.15rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 580px;
+  margin: 0 auto 1.6rem;
+  line-height: 1.5;
+}
+
+.md-typeset .install-cmd {
+  max-width: 760px;
+  margin: 1rem auto 2rem;
+}
+
+.md-typeset .install-cmd pre {
+  background: linear-gradient(135deg, rgba(124, 140, 255, 0.08), rgba(183, 148, 244, 0.06));
+  border: 1px solid rgba(124, 140, 255, 0.25);
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  padding: 1.25rem 1.4rem;
+  border-radius: 10px;
+  background: var(--md-default-bg-color--light);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.feature-card h3 {
+  margin: 0 0 0.5rem !important;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--md-default-fg-color);
+}
+
+.feature-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--md-default-fg-color--light);
+  line-height: 1.55;
+}
