@@ -489,6 +489,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-clipboard-is-working-memory-clipboarder-makes-it-shared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The clipboard is working memory. clipboarder makes it shared.
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The clipboard is working memory. clipboarder makes it shared.">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-liner-claude-code-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One-liner Claude Code skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#why-clipboarder" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -499,6 +527,17 @@
   
     <nav class="md-nav" aria-label="Why clipboarder">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#built-for-agents-beloved-by-humans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built for agents, beloved by humans
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#instant-search" class="md-nav__link">
@@ -538,17 +577,6 @@
     <span class="md-ellipsis">
       
         Source app icons
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-paste" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick-paste
       
     </span>
   </a>
@@ -1843,6 +1871,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-clipboard-is-working-memory-clipboarder-makes-it-shared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The clipboard is working memory. clipboarder makes it shared.
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The clipboard is working memory. clipboarder makes it shared.">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-liner-claude-code-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One-liner Claude Code skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#why-clipboarder" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1853,6 +1909,17 @@
   
     <nav class="md-nav" aria-label="Why clipboarder">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#built-for-agents-beloved-by-humans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built for agents, beloved by humans
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#instant-search" class="md-nav__link">
@@ -1892,17 +1959,6 @@
     <span class="md-ellipsis">
       
         Source app icons
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-paste" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick-paste
       
     </span>
   </a>
@@ -1997,9 +2053,9 @@
 <div class="clipboarder-hero">
 <p><img alt="clipboarder" src="assets/logo.png" /></p>
 <h1 id="clipboarder">clipboarder<a class="headerlink" href="#clipboarder" title="Permanent link">&para;</a></h1>
-<p class="tagline">A faster, smarter, more beautiful clipboard manager for macOS. Captures everything you copy — text, links, code, colors, PDFs, music — and makes it searchable in milliseconds.</p>
+<p class="tagline">A clipboard for humans <em>and</em> coding agents. Searchable history, smart classification, native macOS overlay, scriptable CLI.</p>
 <p><a class="md-button md-button--primary" href="getting-started/installation/">Install</a>
-<a class="md-button" href="getting-started/quickstart/">Quickstart</a></p>
+<a class="md-button" href="agents/">For Agents</a></p>
 </div>
 <div class="install-cmd">
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
@@ -2008,8 +2064,54 @@
 <hr />
 <p><img alt="Main view" src="assets/screenshots/main_v2.png" /></p>
 <hr />
+<h2 id="the-clipboard-is-working-memory-clipboarder-makes-it-shared">The clipboard is working memory. clipboarder makes it shared.<a class="headerlink" href="#the-clipboard-is-working-memory-clipboarder-makes-it-shared" title="Permanent link">&para;</a></h2>
+<p>For 40 years humans have used the clipboard as scratch space between apps — copy an error from your terminal, paste into Slack; copy a snippet from Stack Overflow, paste into your editor. You use the clipboard as glue between contexts dozens of times a day.</p>
+<p><strong>Coding agents can't.</strong> Claude Code, Codex, Cursor, and every other LLM assistant lives inside its context window. It can't see what you just copied from your terminal. It can't put a generated command on your clipboard for you to paste somewhere else. It can't recall what you copied ten minutes ago.</p>
+<p>clipboarder fixes that. The same searchable history that powers the GUI overlay is exposed to your agent through a tiny CLI — <code>cb cp</code> to drop something on your clipboard, <code>cb p</code> to read what's there. <strong>Your agent uses the clipboard the way you do.</strong></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Read your clipboard</label><label for="__tabbed_1_2">Write to your clipboard</label><label for="__tabbed_1_3">Search your history</label><label for="__tabbed_1_4">Persistent context</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Agent runs:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cb<span class="w"> </span>p
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># → prints your most-recent clipboard entry to stdout</span>
+</span></code></pre></div>
+<p>Use case — <em>"fix the error I just copied"</em>: the agent calls <code>cb p</code>, gets the stack trace, generates a fix.</p>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Agent runs:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;cargo update -p tokio&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># → puts the fix on your clipboard, AND in clipboarder history</span>
+</span></code></pre></div>
+<p>Use case — <em>"give me a command I can paste in terminal"</em>: the agent calls <code>cb cp</code>, then says "⌘V into terminal". Zero manual copy-paste between you and the agent.</p>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>repo<span class="w"> </span>--grep<span class="w"> </span><span class="s2">&quot;auth&quot;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># → most-recent GitHub URL matching &quot;auth&quot;</span>
+</span></code></pre></div>
+<p>Use case — <em>"find that PR URL I copied earlier"</em>: agent calls <code>cb p --grep</code> and returns the link in under 2 ms.</p>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cb<span class="w"> </span>pin<span class="w"> </span><span class="m">42</span><span class="w">   </span><span class="c1"># agent stars an item to survive history limits</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>cb<span class="w"> </span>watch<span class="w">    </span><span class="c1"># stream new copies as JSON Lines as they happen</span>
+</span></code></pre></div>
+<p>Use case — <em>"remember this for next session"</em>: agent pins items it wants persistent recall on.</p>
+</div>
+</div>
+</div>
+<h3 id="one-liner-claude-code-skill">One-liner Claude Code skill<a class="headerlink" href="#one-liner-claude-code-skill" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>~/.claude/skills/clipboarder<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>-o<span class="w"> </span>~/.claude/skills/clipboarder/SKILL.md
+</span></code></pre></div>
+<p>Claude Code auto-loads the skill on its next session. No plugin install, no config edit. The skill triggers on phrases like <em>"what did I copy"</em>, <em>"find that link I had"</em>, <em>"save this for later"</em>.</p>
+<p>For LangChain / OpenAI Assistants / Cursor / any other harness → <a href="agents/">For agents</a> (JSON schema, tool definitions, privacy guidance, secret-detection heuristics).</p>
+<hr />
 <h2 id="why-clipboarder">Why clipboarder<a class="headerlink" href="#why-clipboarder" title="Permanent link">&para;</a></h2>
 <div class="feature-grid">
+<div class="feature-card">
+<h3 id="built-for-agents-beloved-by-humans">Built for agents, beloved by humans<a class="headerlink" href="#built-for-agents-beloved-by-humans" title="Permanent link">&para;</a></h3>
+<p>A polished native overlay AND a <code>cb</code> CLI on your PATH. Both read the same SQLite history. Same data, two interfaces.</p>
+</div>
 <div class="feature-card">
 <h3 id="instant-search">Instant search<a class="headerlink" href="#instant-search" title="Permanent link">&para;</a></h3>
 <p>SQLite FTS5 with bm25 ranking. Sub-millisecond results across thousands of items, even on a cold cache.</p>
@@ -2020,24 +2122,20 @@
 </div>
 <div class="feature-card">
 <h3 id="rich-previews">Rich previews<a class="headerlink" href="#rich-previews" title="Permanent link">&para;</a></h3>
-<p>Color swatches with HEX/RGB/HSL. Inline PDF embed. Music/video cards for Spotify, Apple Music, YouTube, SoundCloud. Repo cards for GitHub/GitLab.</p>
+<p>Color swatches with HEX/RGB/HSL. Inline PDF embed. Branded music/video cards. Repo cards for GitHub/GitLab with OpenGraph hero.</p>
 </div>
 <div class="feature-card">
 <h3 id="source-app-icons">Source app icons<a class="headerlink" href="#source-app-icons" title="Permanent link">&para;</a></h3>
 <p>Each row shows the real icon of the app you copied from — Safari, VS Code, Figma — extracted live via NSWorkspace.</p>
 </div>
 <div class="feature-card">
-<h3 id="quick-paste">Quick-paste<a class="headerlink" href="#quick-paste" title="Permanent link">&para;</a></h3>
-<p><code>⌘1</code>–<code>⌘9</code> paste the top 9 results directly into the previously-focused app, no extra keystrokes.</p>
-</div>
-<div class="feature-card">
 <h3 id="private-by-default">Private by default<a class="headerlink" href="#private-by-default" title="Permanent link">&para;</a></h3>
-<p>All data stays local at <code>~/Library/Application Support/com.clipboarder.app/</code>. No telemetry. No cloud. No account.</p>
+<p>All data stays local. No telemetry. No cloud. No account. Privacy exclusions keep password managers out of history.</p>
 </div>
 </div>
 <hr />
 <h2 id="a-preview-for-every-kind">A preview for every kind<a class="headerlink" href="#a-preview-for-every-kind" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Repos</label><label for="__tabbed_1_2">Music</label><label for="__tabbed_1_3">Colors</label><label for="__tabbed_1_4">Code</label><label for="__tabbed_1_5">Settings</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:5"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Repos</label><label for="__tabbed_2_2">Music</label><label for="__tabbed_2_3">Colors</label><label for="__tabbed_2_4">Code</label><label for="__tabbed_2_5">Settings</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p><img alt="Repo card" src="assets/screenshots/repo_v2.png" /></p>
@@ -2058,20 +2156,36 @@
 </div>
 <hr />
 <h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>NSPasteboard  ─▶  Watcher  ─▶  Classify + hash  ─▶  SQLite + FTS5
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                                                         │
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>       ⌘⇧V hotkey  ─▶  Tauri IPC  ─▶  React frontend  ─◀──┘
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>                            │
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>                            ▼
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>                    Paste-back via CGEventPost
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>                    into the previously-focused app
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>       ┌────────────────────────────────────────────────────────┐
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>       │                  Your macOS clipboard                  │
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>       │                    (NSPasteboard)                      │
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>       └─────────────┬──────────────────────────┬───────────────┘
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>                     │                          │
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>              read   │                          │  write
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>                     ▼                          ▼
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>┌──────────────────────────┐         ┌──────────────────────────┐
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>│   GUI overlay (⌘⇧V)      │         │   cb CLI                 │
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>│   for humans             │         │   for agents + shells    │
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>│                          │         │                          │
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>│   Search, filter, paste  │         │   cb cp / cb p / cb pop  │
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>└─────────────┬────────────┘         └─────────────┬────────────┘
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>              │                                    │
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>              └─────────────────┬──────────────────┘
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>                                ▼
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>              ┌─────────────────────────────────┐
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>              │  SQLite + FTS5 (local, on disk) │
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>              │  ~/Library/Application Support/ │
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>              │   com.clipboarder.app/          │
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>              └─────────────────────────────────┘
 </span></code></pre></div>
-<p>A Rust thread watches <code>NSPasteboard</code> change-count and reads every clipboard event. Content is classified, deduplicated, and persisted. The overlay is a frameless transparent Tauri window that floats above other apps and joins every macOS Space. Selecting an item writes it back to the pasteboard, hides the overlay, and synthesizes <code>⌘V</code> into the previously-focused app.</p>
+<p>A Rust thread watches <code>NSPasteboard</code> change-count. Every copy is classified, deduplicated via SHA-256, persisted with FTS5 triggers keeping the search index in sync. The overlay is a frameless transparent Tauri window that floats above other apps. Selecting an item writes it back to the pasteboard, hides the overlay, deactivates clipboarder (so macOS surfaces your previous app), and synthesizes <code>⌘V</code> via <code>CGEventPost</code>. The CLI talks to the same SQLite store directly — works whether or not the GUI is running.</p>
 <hr />
 <h2 id="get-started">Get Started<a class="headerlink" href="#get-started" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><a href="getting-started/installation/">Installation</a></strong> — one-liner installer or manual <code>.dmg</code></li>
 <li><strong><a href="getting-started/quickstart/">Quickstart</a></strong> — your first 60 seconds with clipboarder</li>
+<li><strong><a href="cli-reference/pipes/">Pipe one-liners (<code>cb cp</code> / <code>cb p</code>)</a></strong> — the flagship CLI ergonomics</li>
+<li><strong><a href="agents/">For agents</a></strong> — Claude Skill, LangChain, OpenAI, schema</li>
 <li><strong><a href="usage/shortcuts/">Keyboard shortcuts</a></strong> — the moves that make it fast</li>
 <li><strong><a href="settings/">Settings</a></strong> — every knob, explained</li>
 </ul>
