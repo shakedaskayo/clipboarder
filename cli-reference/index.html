@@ -16,7 +16,7 @@
         <link rel="prev" href="../settings/launch-at-login/">
       
       
-        <link rel="next" href="list/">
+        <link rel="next" href="pipes/">
       
       
         
@@ -1127,15 +1127,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-recipes" class="md-nav__link">
+  <a href="#quick-recipes-see-pipesmd-for-the-full-picture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick recipes
+        Quick recipes (see pipes.md for the full picture)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Quick recipes">
+    <nav class="md-nav" aria-label="Quick recipes (see pipes.md for the full picture)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1213,6 +1213,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pipes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipe one-liners (cb cp / cb p)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1800,15 +1828,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-recipes" class="md-nav__link">
+  <a href="#quick-recipes-see-pipesmd-for-the-full-picture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick recipes
+        Quick recipes (see pipes.md for the full picture)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Quick recipes">
+    <nav class="md-nav" aria-label="Quick recipes (see pipes.md for the full picture)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1913,7 +1941,16 @@
 <li><strong>No args</strong> → GUI overlay (the floating window you summon with <code>⌘⇧V</code>)</li>
 <li><strong>With a subcommand</strong> → CLI</li>
 </ul>
-<p>The installer symlinks <code>/usr/local/bin/clipboarder</code> (or <code>~/.local/bin/clipboarder</code> if the former isn't writable) to the .app's binary, so <code>clipboarder list</code> works from any shell.</p>
+<p>The installer creates <strong>two symlinks</strong> on your PATH:</p>
+<ul>
+<li><code>clipboarder</code> — full command name</li>
+<li><code>cb</code> — short alias for one-liners</li>
+</ul>
+<p>Both point at the same binary. Use whichever feels right.</p>
+<div class="admonition tip">
+<p class="admonition-title">Start here</p>
+<p>The most powerful workflows are pipe-based. See <strong><a href="pipes/">Pipe one-liners (cb cp / cb p)</a></strong> — that's the page that turns clipboarder into a context database your shell and AI agents can drive.</p>
+</div>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>clipboarder<span class="w"> </span>--help
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -1924,19 +1961,23 @@
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Usage:<span class="w"> </span>clipboarder<span class="w"> </span>&lt;COMMAND&gt;
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Commands:
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span>list<span class="w">    </span>List<span class="w"> </span>most<span class="w"> </span>recent<span class="w"> </span>items<span class="w">                     </span><span class="o">(</span>alias:<span class="w"> </span>ls<span class="o">)</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span>search<span class="w">  </span>Full-text<span class="w"> </span>search<span class="w"> </span>the<span class="w"> </span>clipboard<span class="w"> </span><span class="nb">history</span><span class="w">     </span><span class="o">(</span>alias:<span class="w"> </span>find<span class="o">)</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span>show<span class="w">    </span>Print<span class="w"> </span>one<span class="w"> </span>item<span class="err">&#39;</span>s<span class="w"> </span>full<span class="w"> </span>content<span class="w">              </span><span class="o">(</span>alias:<span class="w"> </span>cat,<span class="w"> </span>get<span class="o">)</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span>add<span class="w">     </span>Add<span class="w"> </span>a<span class="w"> </span>new<span class="w"> </span>item<span class="w"> </span>from<span class="w"> </span>stdin<span class="w"> </span>or<span class="w"> </span>argument<span class="w">      </span><span class="o">(</span>alias:<span class="w"> </span>ingest<span class="o">)</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span>pin<span class="w">     </span>Pin<span class="w"> </span>an<span class="w"> </span>item<span class="w">                                </span><span class="o">(</span>alias:<span class="w"> </span>star<span class="o">)</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span>unpin<span class="w">   </span>Unpin<span class="w"> </span>an<span class="w"> </span>item<span class="w">                              </span><span class="o">(</span>alias:<span class="w"> </span>unstar<span class="o">)</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span>delete<span class="w">  </span>Delete<span class="w"> </span>an<span class="w"> </span>item<span class="w">                             </span><span class="o">(</span>alias:<span class="w"> </span>rm<span class="o">)</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span>clear<span class="w">   </span>Clear<span class="w"> </span>all<span class="w"> </span>non-pinned<span class="w"> </span>items
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span>copy<span class="w">    </span>Copy<span class="w"> </span>item<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>macOS<span class="w"> </span>clipboard
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span>stats<span class="w">   </span>Print<span class="w"> </span>database<span class="w"> </span>statistics
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span>watch<span class="w">   </span>Stream<span class="w"> </span>new<span class="w"> </span>items<span class="w"> </span>as<span class="w"> </span>JSON<span class="w"> </span>Lines<span class="w"> </span>on<span class="w"> </span>stdout
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span>cp<span class="w">      </span>pbcopy++<span class="w">  </span>stdin<span class="w"> </span>→<span class="w"> </span><span class="nb">history</span><span class="w"> </span>+<span class="w"> </span>system<span class="w"> </span>pasteboard<span class="w">      </span><span class="o">(</span>alias:<span class="w"> </span>pipe<span class="o">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span>p<span class="w">       </span>pbpaste++<span class="w"> </span>Nth<span class="w"> </span>recent<span class="w"> </span>item<span class="w"> </span>→<span class="w"> </span>stdout<span class="w">                 </span><span class="o">(</span>aliases:<span class="w"> </span>paste,<span class="w"> </span>last<span class="o">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span>pop<span class="w">     </span>Print<span class="w"> </span>+<span class="w"> </span>delete<span class="w"> </span>most<span class="w"> </span>recent<span class="w"> </span>item
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span>list<span class="w">    </span>List<span class="w"> </span>most<span class="w"> </span>recent<span class="w"> </span>items<span class="w">                             </span><span class="o">(</span>alias:<span class="w"> </span>ls<span class="o">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span>search<span class="w">  </span>Full-text<span class="w"> </span>search<span class="w"> </span>the<span class="w"> </span>clipboard<span class="w"> </span><span class="nb">history</span><span class="w">             </span><span class="o">(</span>alias:<span class="w"> </span>find<span class="o">)</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span>show<span class="w">    </span>Print<span class="w"> </span>one<span class="w"> </span>item<span class="err">&#39;</span>s<span class="w"> </span>full<span class="w"> </span>content<span class="w">                      </span><span class="o">(</span>alias:<span class="w"> </span>cat,<span class="w"> </span>get<span class="o">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span>add<span class="w">     </span>Add<span class="w"> </span>a<span class="w"> </span>new<span class="w"> </span>item<span class="w"> </span>from<span class="w"> </span>stdin<span class="w"> </span>or<span class="w"> </span>argument<span class="w">              </span><span class="o">(</span>alias:<span class="w"> </span>ingest<span class="o">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span>pin<span class="w">     </span>Pin<span class="w"> </span>an<span class="w"> </span>item<span class="w">                                        </span><span class="o">(</span>alias:<span class="w"> </span>star<span class="o">)</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span>unpin<span class="w">   </span>Unpin<span class="w"> </span>an<span class="w"> </span>item<span class="w">                                      </span><span class="o">(</span>alias:<span class="w"> </span>unstar<span class="o">)</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span>delete<span class="w">  </span>Delete<span class="w"> </span>an<span class="w"> </span>item<span class="w">                                     </span><span class="o">(</span>alias:<span class="w"> </span>rm<span class="o">)</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">  </span>clear<span class="w">   </span>Clear<span class="w"> </span>all<span class="w"> </span>non-pinned<span class="w"> </span>items
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">  </span>copy<span class="w">    </span>Copy<span class="w"> </span>a<span class="w"> </span><span class="nb">history</span><span class="w"> </span>item<span class="w"> </span>back<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>macOS<span class="w"> </span>pasteboard
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">  </span>stats<span class="w">   </span>Print<span class="w"> </span>database<span class="w"> </span>statistics
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">  </span>watch<span class="w">   </span>Stream<span class="w"> </span>new<span class="w"> </span>items<span class="w"> </span>as<span class="w"> </span>JSON<span class="w"> </span>Lines<span class="w"> </span>on<span class="w"> </span>stdout
 </span></code></pre></div>
-<h2 id="quick-recipes">Quick recipes<a class="headerlink" href="#quick-recipes" title="Permanent link">&para;</a></h2>
+<h2 id="quick-recipes-see-pipesmd-for-the-full-picture">Quick recipes (see <a href="pipes/">pipes.md</a> for the full picture)<a class="headerlink" href="#quick-recipes-see-pipesmd-for-the-full-picture" title="Permanent link">&para;</a></h2>
 <h3 id="copy-the-latest-captured-url-to-the-pasteboard">Copy the latest captured URL to the pasteboard<a class="headerlink" href="#copy-the-latest-captured-url-to-the-pasteboard" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>clipboarder<span class="w"> </span>copy<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>clipboarder<span class="w"> </span>list<span class="w"> </span>--kind<span class="w"> </span>url<span class="w"> </span>--limit<span class="w"> </span><span class="m">1</span><span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0].id&#39;</span><span class="k">)</span><span class="s2">&quot;</span>
 </span></code></pre></div>
@@ -2012,13 +2053,13 @@
         
         
           
-          <a href="list/" class="md-footer__link md-footer__link--next" aria-label="Next: list">
+          <a href="pipes/" class="md-footer__link md-footer__link--next" aria-label="Next: Pipe one-liners (cb cp / cb p)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                list
+                Pipe one-liners (cb cp / cb p)
               </div>
             </div>
             <div class="md-footer__button md-icon">

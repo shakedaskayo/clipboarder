@@ -1079,6 +1079,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../cli-reference/pipes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipe one-liners (cb cp / cb p)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cli-reference/list/" class="md-nav__link">
         
   
@@ -1466,10 +1494,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#drop-in-claude-skill" class="md-nav__link">
+  <a href="#drop-in-claude-skill-one-liner" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Drop-in Claude Skill
+        Drop-in Claude Skill (one-liner)
       
     </span>
   </a>
@@ -1905,10 +1933,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#drop-in-claude-skill" class="md-nav__link">
+  <a href="#drop-in-claude-skill-one-liner" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Drop-in Claude Skill
+        Drop-in Claude Skill (one-liner)
       
     </span>
   </a>
@@ -2127,41 +2155,40 @@
 <li><strong>Per-kind filtering</strong> — <code>--kind repo</code> / <code>--kind code</code> / <code>--kind color</code> etc. lets the agent narrow context cheaply.</li>
 <li><strong>Pinning is a write-light operation</strong> — agents can mark items the user wants to keep around without restructuring storage.</li>
 </ul>
-<h2 id="drop-in-claude-skill">Drop-in Claude Skill<a class="headerlink" href="#drop-in-claude-skill" title="Permanent link">&para;</a></h2>
-<p>If you're using Claude Code, copy <a href="https://github.com/shakedaskayo/clipboarder/blob/main/agents/.claude/skills/clipboarder/SKILL.md"><code>SKILL.md</code></a> to:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~/.claude/skills/clipboarder/SKILL.md
+<h2 id="drop-in-claude-skill-one-liner">Drop-in Claude Skill (one-liner)<a class="headerlink" href="#drop-in-claude-skill-one-liner" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>~/.claude/skills/clipboarder<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>-o<span class="w"> </span>~/.claude/skills/clipboarder/SKILL.md
 </span></code></pre></div>
-<p>Claude auto-loads it. The skill triggers on phrases like "what did I copy", "find that link I had", "save this for later". No further config.</p>
+<p>Claude Code auto-loads the skill on every session. The skill triggers on phrases like <em>"what did I copy"</em>, <em>"find that link I had"</em>, <em>"save this for later"</em> — no further config, no plugin install.</p>
 <h2 id="cli-cheat-sheet">CLI cheat-sheet<a class="headerlink" href="#cli-cheat-sheet" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Recent items (table)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>clipboarder<span class="w"> </span>list<span class="w"> </span>--limit<span class="w"> </span><span class="m">10</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Recent items (JSON for agents)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>clipboarder<span class="w"> </span>list<span class="w"> </span>--limit<span class="w"> </span><span class="m">10</span><span class="w"> </span>--json
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Full-text search</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>clipboarder<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;anthropic&quot;</span><span class="w"> </span>--json
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Filter by kind</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>clipboarder<span class="w"> </span>list<span class="w"> </span>--kind<span class="w"> </span>repo<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span><span class="w"> </span>--json
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>clipboarder<span class="w"> </span>list<span class="w"> </span>--kind<span class="w"> </span>code<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span><span class="w"> </span>--json
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>clipboarder<span class="w"> </span>list<span class="w"> </span>--kind<span class="w"> </span>color<span class="w"> </span>--json
+<p>Prefer <strong><code>cb</code></strong> (the short alias) over <code>clipboarder</code> in tool calls — it's the same binary.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Pipe one-liners — recommended path for agents</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;save this&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp<span class="w"> </span>--source<span class="w"> </span>claude<span class="w"> </span>--json<span class="w">    </span><span class="c1"># stdin → history + clipboard</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>cb<span class="w"> </span>p<span class="w">                                               </span><span class="c1"># most recent item to stdout</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>url<span class="w">                                    </span><span class="c1"># most recent URL</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>repo<span class="w"> </span>--grep<span class="w"> </span><span class="s2">&quot;tauri&quot;</span><span class="w"> </span>--json<span class="w">             </span><span class="c1"># composed search → JSON row</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>cb<span class="w"> </span>p<span class="w"> </span>--all<span class="w"> </span>--kind<span class="w"> </span>code<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span><span class="w">                   </span><span class="c1"># all matching, body per line</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>cb<span class="w"> </span>pop<span class="w">                                             </span><span class="c1"># print + delete most recent</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Structured search</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>cb<span class="w"> </span>list<span class="w"> </span>--limit<span class="w"> </span><span class="m">10</span><span class="w"> </span>--json
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>cb<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;anthropic&quot;</span><span class="w"> </span>--json
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>cb<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;react hooks&quot;</span><span class="w"> </span>--kind<span class="w"> </span>code<span class="w"> </span>--json
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>cb<span class="w"> </span>show<span class="w"> </span><span class="m">42</span><span class="w"> </span>--json<span class="w">                                  </span><span class="c1"># full row by id</span>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># Show full content of an item</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>clipboarder<span class="w"> </span>show<span class="w"> </span><span class="m">42</span><span class="w"> </span>--json
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="c1"># Stream new items as they arrive (JSONL on stdout)</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>clipboarder<span class="w"> </span>watch
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1"># Ingest from stdin</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;save this for later&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>clipboarder<span class="w"> </span>add<span class="w"> </span>--source<span class="w"> </span><span class="s2">&quot;claude&quot;</span><span class="w"> </span>--json
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="c1"># Pin / delete</span>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>clipboarder<span class="w"> </span>pin<span class="w"> </span><span class="m">42</span>
-</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>clipboarder<span class="w"> </span>delete<span class="w"> </span><span class="m">42</span>
-</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
-</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="c1"># Stats</span>
-</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>clipboarder<span class="w"> </span>stats<span class="w"> </span>--json
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># Mutations</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>cb<span class="w"> </span>pin<span class="w"> </span><span class="m">42</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>cb<span class="w"> </span>delete<span class="w"> </span><span class="m">42</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>cb<span class="w"> </span>clear<span class="w"> </span>-y<span class="w">                                        </span><span class="c1"># nuke non-pinned</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="c1"># Watch new items (JSONL, polls every 500ms)</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>cb<span class="w"> </span>watch<span class="w"> </span>--kind<span class="w"> </span>url<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>line<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$line</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.content<span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>notify-send<span class="w"> </span><span class="s2">&quot;New URL captured&quot;</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="k">done</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="c1"># Stats</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>cb<span class="w"> </span>stats<span class="w"> </span>--json
 </span></code></pre></div>
 <h2 id="json-schema">JSON schema<a class="headerlink" href="#json-schema" title="Permanent link">&para;</a></h2>
 <p>Every item from <code>list</code>/<code>search</code>/<code>show</code>/<code>watch</code> has the same shape:</p>

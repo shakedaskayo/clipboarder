@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://shakedaskayo.github.io/clipboarder/architecture/storage/">
+        <link rel="canonical" href="https://shakedaskayo.github.io/clipboarder/cli-reference/pipes/">
       
       
-        <link rel="prev" href="../classification/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../paste-back/">
+        <link rel="next" href="../list/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Storage & search - clipboarder</title>
+        <title>Pipe one-liners (cb cp / cb p) - clipboarder</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#storage-search" class="md-skip">
+        <a href="#pipe-friendly-one-liners" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Storage & search
+              Pipe one-liners (cb cp / cb p)
             
           </span>
         </div>
@@ -303,11 +303,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../cli-reference/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -343,13 +345,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -996,26 +996,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1033,7 +1038,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1051,7 +1056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -1076,10 +1081,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../cli-reference/pipes/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipe one-liners (cb cp / cb p)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1095,6 +1127,181 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-two-stars-cb-cp-and-cb-p" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two stars: cb cp and cb p
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The two stars: cb cp and cb p">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cb-cp-stdin-history-macos-clipboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cb cp — stdin → history + macOS clipboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-p-print-recent-items-to-stdout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cb p — print recent items to stdout
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#round-trip-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Round-trip examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Round-trip examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capture-a-json-blob-into-history-fetch-it-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capture a JSON blob into history, fetch it later
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pipe-the-last-url-you-copied-straight-into-a-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipe the last URL you copied straight into a browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#most-recent-color-formatted-three-ways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Most recent color, formatted three ways
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search-history-copy-the-best-match-to-system-clipboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search history, copy the best match to system clipboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pop-the-head-of-the-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pop the head of the queue
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream-new-copies-into-a-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream new copies into a log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-what-your-scripts-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag what your scripts add
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-pairs-with-pbcopypbpaste" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it pairs with pbcopy/pbpaste
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-ai-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For AI agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1107,7 +1314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/list/" class="md-nav__link">
+      <a href="../list/" class="md-nav__link">
         
   
   
@@ -1135,7 +1342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/search/" class="md-nav__link">
+      <a href="../search/" class="md-nav__link">
         
   
   
@@ -1163,7 +1370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/show/" class="md-nav__link">
+      <a href="../show/" class="md-nav__link">
         
   
   
@@ -1191,7 +1398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/add/" class="md-nav__link">
+      <a href="../add/" class="md-nav__link">
         
   
   
@@ -1219,7 +1426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/pin/" class="md-nav__link">
+      <a href="../pin/" class="md-nav__link">
         
   
   
@@ -1247,7 +1454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/delete/" class="md-nav__link">
+      <a href="../delete/" class="md-nav__link">
         
   
   
@@ -1275,7 +1482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/copy/" class="md-nav__link">
+      <a href="../copy/" class="md-nav__link">
         
   
   
@@ -1303,7 +1510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/stats/" class="md-nav__link">
+      <a href="../stats/" class="md-nav__link">
         
   
   
@@ -1331,7 +1538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli-reference/watch/" class="md-nav__link">
+      <a href="../watch/" class="md-nav__link">
         
   
   
@@ -1450,31 +1657,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1492,7 +1694,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1510,7 +1712,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -1538,7 +1740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../classification/" class="md-nav__link">
+      <a href="../../architecture/classification/" class="md-nav__link">
         
   
   
@@ -1563,37 +1765,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Storage & search
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../architecture/storage/" class="md-nav__link">
         
   
   
@@ -1609,103 +1784,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#schema" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Schema
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pragmas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pragmas
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#insert-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Insert path
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#search-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Search path
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retention-enforcement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retention enforcement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#file-system-layout" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File-system layout
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#migrations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migrations
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1718,7 +1796,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../paste-back/" class="md-nav__link">
+      <a href="../../architecture/paste-back/" class="md-nav__link">
         
   
   
@@ -1800,10 +1878,143 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#schema" class="md-nav__link">
+  <a href="#the-two-stars-cb-cp-and-cb-p" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema
+        The two stars: cb cp and cb p
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The two stars: cb cp and cb p">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cb-cp-stdin-history-macos-clipboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cb cp — stdin → history + macOS clipboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cb-p-print-recent-items-to-stdout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cb p — print recent items to stdout
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#round-trip-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Round-trip examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Round-trip examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capture-a-json-blob-into-history-fetch-it-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capture a JSON blob into history, fetch it later
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pipe-the-last-url-you-copied-straight-into-a-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipe the last URL you copied straight into a browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#most-recent-color-formatted-three-ways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Most recent color, formatted three ways
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search-history-copy-the-best-match-to-system-clipboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search history, copy the best match to system clipboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pop-the-head-of-the-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pop the head of the queue
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream-new-copies-into-a-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream new copies into a log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-what-your-scripts-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag what your scripts add
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-pairs-with-pbcopypbpaste" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it pairs with pbcopy/pbpaste
       
     </span>
   </a>
@@ -1811,65 +2022,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pragmas" class="md-nav__link">
+  <a href="#for-ai-agents" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pragmas
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#insert-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Insert path
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#search-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Search path
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retention-enforcement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retention enforcement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#file-system-layout" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File-system layout
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#migrations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migrations
+        For AI agents
       
     </span>
   </a>
@@ -1893,7 +2049,7 @@
 
 
   
-    <a href="https://github.com/shakedaskayo/clipboarder/edit/main/docs/docs/architecture/storage.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/shakedaskayo/clipboarder/edit/main/docs/docs/cli-reference/pipes.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1901,102 +2057,116 @@
   
 
 
-<h1 id="storage-search">Storage &amp; search<a class="headerlink" href="#storage-search" title="Permanent link">&para;</a></h1>
-<p>clipboarder uses SQLite with the FTS5 extension, both bundled directly into the binary via <code>rusqlite</code>'s <code>bundled</code> feature.</p>
-<h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">id</span><span class="w">            </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="n">kind</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">    </span><span class="c1">-- text | url | email | code | color | image | file | pdf | music | video | repo</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">content</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">    </span><span class="c1">-- full payload (empty for images; image_path holds the file)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">preview</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">    </span><span class="c1">-- single-line preview shown in the list</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="n">meta</span><span class="w">          </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">             </span><span class="c1">-- kind-specific: host, language, color format, platform</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">source_app</span><span class="w">    </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">             </span><span class="c1">-- localized name of the frontmost app at capture</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="n">source_app_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">             </span><span class="c1">-- its bundle id (e.g. &quot;com.apple.Safari&quot;)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="n">image_path</span><span class="w">    </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">             </span><span class="c1">-- path on disk for image captures</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="n">pinned</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="k">size</span><span class="w">          </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="n">content_hash</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">    </span><span class="c1">-- SHA-256 (32 bytes hex) for dedup</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="n">created_at</span><span class="w">    </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="c1">-- unix ms</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="n">last_used_at</span><span class="w">  </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">  </span><span class="c1">-- unix ms; bumped on re-copy or paste-back</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">);</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_items_hash</span><span class="w">       </span><span class="k">ON</span><span class="w"> </span><span class="n">items</span><span class="p">(</span><span class="n">content_hash</span><span class="p">);</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w">        </span><span class="n">idx_items_last_used</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">items</span><span class="p">(</span><span class="n">last_used_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w">        </span><span class="n">idx_items_kind</span><span class="w">       </span><span class="k">ON</span><span class="w"> </span><span class="n">items</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span><span class="w"> </span><span class="n">last_used_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="k">CREATE</span><span class="w"> </span><span class="n">VIRTUAL</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">items_fts</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">fts5</span><span class="p">(</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">,</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">    </span><span class="n">content</span><span class="o">=</span><span class="s1">&#39;items&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content_rowid</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">    </span><span class="n">tokenize</span><span class="o">=</span><span class="s1">&#39;unicode61 remove_diacritics 2&#39;</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="p">);</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1">-- Triggers keep items_fts in sync without app-level bookkeeping.</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">items_ai</span><span class="w"> </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="k">BEGIN</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">items_fts</span><span class="p">(</span><span class="n">rowid</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">new</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="p">.</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="p">.</span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">new</span><span class="p">.</span><span class="n">meta</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">));</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="k">END</span><span class="p">;</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">items_ad</span><span class="w"> </span><span class="k">AFTER</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="k">BEGIN</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">items_fts</span><span class="p">(</span><span class="n">items_fts</span><span class="p">,</span><span class="w"> </span><span class="n">rowid</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">old</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">old</span><span class="p">.</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="k">old</span><span class="p">.</span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">old</span><span class="p">.</span><span class="n">meta</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">));</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="k">END</span><span class="p">;</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">items_au</span><span class="w"> </span><span class="k">AFTER</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="k">BEGIN</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">items_fts</span><span class="p">(</span><span class="n">items_fts</span><span class="p">,</span><span class="w"> </span><span class="n">rowid</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">old</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">old</span><span class="p">.</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="k">old</span><span class="p">.</span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">old</span><span class="p">.</span><span class="n">meta</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">));</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">items_fts</span><span class="p">(</span><span class="n">rowid</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">new</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="p">.</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="p">.</span><span class="n">preview</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">new</span><span class="p">.</span><span class="n">meta</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">));</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="k">END</span><span class="p">;</span>
+<h1 id="pipe-friendly-one-liners">Pipe-friendly one-liners<a class="headerlink" href="#pipe-friendly-one-liners" title="Permanent link">&para;</a></h1>
+<p>clipboarder ships a short alias — <strong><code>cb</code></strong> — and two purpose-built subcommands that turn your shell into a clipboard pipeline.</p>
+<blockquote>
+<p>Think <code>pbcopy</code> / <code>pbpaste</code>, but with <strong>history</strong>, <strong>search</strong>, and <strong>kind filters</strong>.</p>
+</blockquote>
+<h2 id="the-two-stars-cb-cp-and-cb-p">The two stars: <code>cb cp</code> and <code>cb p</code><a class="headerlink" href="#the-two-stars-cb-cp-and-cb-p" title="Permanent link">&para;</a></h2>
+<h3 id="cb-cp-stdin-history-macos-clipboard"><code>cb cp</code> — stdin → history + macOS clipboard<a class="headerlink" href="#cb-cp-stdin-history-macos-clipboard" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;remember this&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git<span class="w"> </span>log<span class="w"> </span>--oneline<span class="w"> </span>-5<span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp<span class="w">           </span><span class="c1"># multi-line works</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>date<span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp<span class="w"> </span>--kind<span class="w"> </span>text<span class="w"> </span>--source<span class="w"> </span>cron<span class="w"> </span><span class="c1"># tag where it came from</span>
 </span></code></pre></div>
-<h2 id="pragmas">Pragmas<a class="headerlink" href="#pragmas" title="Permanent link">&para;</a></h2>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">PRAGMA</span><span class="w"> </span><span class="n">journal_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WAL</span><span class="p">;</span><span class="w">       </span><span class="c1">-- reader/writer concurrency</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">PRAGMA</span><span class="w"> </span><span class="n">synchronous</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">NORMAL</span><span class="p">;</span><span class="w">    </span><span class="c1">-- WAL is safe enough at NORMAL</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">PRAGMA</span><span class="w"> </span><span class="n">foreign_keys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ON</span><span class="p">;</span>
+<p>Behavior:</p>
+<ul>
+<li>Reads stdin</li>
+<li>Classifies + dedups via SHA-256</li>
+<li>Writes to <strong>both</strong> the clipboarder history <strong>and</strong> the macOS clipboard (so any ⌘V uses it immediately)</li>
+<li>Add <code>--no-clipboard</code> to only persist (don't touch the system pasteboard)</li>
+<li>Add <code>--json</code> to get <code>{"id":42,"inserted":true,"kind":"..."}</code></li>
+</ul>
+<h3 id="cb-p-print-recent-items-to-stdout"><code>cb p</code> — print recent items to stdout<a class="headerlink" href="#cb-p-print-recent-items-to-stdout" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cb<span class="w"> </span>p<span class="w">                          </span><span class="c1"># most recent item&#39;s content</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cb<span class="w"> </span>p<span class="w"> </span><span class="m">2</span><span class="w">                        </span><span class="c1"># 2nd most recent</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>url<span class="w">               </span><span class="c1"># most recent URL</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>cb<span class="w"> </span>p<span class="w"> </span>--grep<span class="w"> </span><span class="s2">&quot;react&quot;</span><span class="w">           </span><span class="c1"># most recent item matching &quot;react&quot;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>repo<span class="w"> </span>--grep<span class="w"> </span>tauri<span class="w"> </span><span class="c1"># composed: most recent repo URL matching tauri</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>cb<span class="w"> </span>p<span class="w"> </span>--copy<span class="w">                   </span><span class="c1"># ↑ AND put on macOS pasteboard</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>cb<span class="w"> </span>p<span class="w"> </span>--all<span class="w"> </span>--kind<span class="w"> </span>code<span class="w">        </span><span class="c1"># all code items, one per line</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>cb<span class="w"> </span>p<span class="w"> </span>--json<span class="w">                   </span><span class="c1"># full row as JSON</span>
 </span></code></pre></div>
-<p>WAL mode is critical: the watcher thread writes constantly, and the UI thread reads on every keystroke. WAL means they don't block each other.</p>
-<h2 id="insert-path">Insert path<a class="headerlink" href="#insert-path" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>storage::upsert(NewItem { ... }) -&gt; (id, was_inserted)
+<p>Aliases: <code>cb paste</code>, <code>cb last</code>.</p>
+<h2 id="round-trip-examples">Round-trip examples<a class="headerlink" href="#round-trip-examples" title="Permanent link">&para;</a></h2>
+<h3 id="capture-a-json-blob-into-history-fetch-it-later">Capture a JSON blob into history, fetch it later<a class="headerlink" href="#capture-a-json-blob-into-history-fetch-it-later" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>api.github.com/users/octocat<span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp<span class="w"> </span>--source<span class="w"> </span>github
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># … later …</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>cb<span class="w"> </span>p<span class="w"> </span>--grep<span class="w"> </span>octocat<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.public_repos
 </span></code></pre></div>
-<ol>
-<li>Look up the row by <code>content_hash</code>. If present, bump <code>last_used_at</code> and return.</li>
-<li>Otherwise INSERT new row.</li>
-<li>Triggers replicate the change into <code>items_fts</code>.</li>
-</ol>
-<h2 id="search-path">Search path<a class="headerlink" href="#search-path" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>storage::search(query, kind_filter, limit) -&gt; Vec&lt;ClipItem&gt;
+<h3 id="pipe-the-last-url-you-copied-straight-into-a-browser">Pipe the last URL you copied straight into a browser<a class="headerlink" href="#pipe-the-last-url-you-copied-straight-into-a-browser" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>open<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>url<span class="k">)</span><span class="s2">&quot;</span>
 </span></code></pre></div>
-<p>Two code paths:</p>
-<p><strong>Empty query</strong> (just filters):</p>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="err">…</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">items</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">WHERE</span><span class="w"> </span><span class="mi">1</span><span class="o">=</span><span class="mi">1</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">pinned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">]</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">pinned</span><span class="w"> </span><span class="k">DESC</span><span class="p">,</span><span class="w"> </span><span class="n">last_used_at</span><span class="w"> </span><span class="k">DESC</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">LIMIT</span><span class="w"> </span><span class="o">?</span>
+<h3 id="most-recent-color-formatted-three-ways">Most recent color, formatted three ways<a class="headerlink" href="#most-recent-color-formatted-three-ways" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cb<span class="w"> </span>p<span class="w"> </span>--kind<span class="w"> </span>color<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;{hex: .content, format: .meta}&#39;</span>
 </span></code></pre></div>
-<p><strong>Non-empty query</strong> — FTS MATCH plus bm25 ranking:</p>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="err">…</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">items_fts</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">rowid</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">items_fts</span><span class="w"> </span><span class="k">MATCH</span><span class="w"> </span><span class="o">?</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="p">[</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">]</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="p">[</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">pinned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">]</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">pinned</span><span class="w"> </span><span class="k">DESC</span><span class="p">,</span><span class="w"> </span><span class="n">bm25</span><span class="p">(</span><span class="n">items_fts</span><span class="p">)</span><span class="w"> </span><span class="k">ASC</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">last_used_at</span><span class="w"> </span><span class="k">DESC</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">LIMIT</span><span class="w"> </span><span class="o">?</span>
+<h3 id="search-history-copy-the-best-match-to-system-clipboard">Search history, copy the best match to system clipboard<a class="headerlink" href="#search-history-copy-the-best-match-to-system-clipboard" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cb<span class="w"> </span>p<span class="w"> </span>--grep<span class="w"> </span><span class="s2">&quot;auth token&quot;</span><span class="w"> </span>--copy
 </span></code></pre></div>
-<p>The match expression is built defensively — each whitespace-separated user token is alphanumeric-stripped, quoted, and suffixed with <code>*</code> for prefix search. That keeps user input from breaking FTS syntax.</p>
-<h2 id="retention-enforcement">Retention enforcement<a class="headerlink" href="#retention-enforcement" title="Permanent link">&para;</a></h2>
-<p>Two operations, both cheap and pinned-aware:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>storage::enforce_limit(max_items) -&gt; deleted_image_paths
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>storage::prune_older_than(days)   -&gt; deleted_image_paths
+<h3 id="pop-the-head-of-the-queue">Pop the head of the queue<a class="headerlink" href="#pop-the-head-of-the-queue" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cb<span class="w"> </span>pop<span class="w">          </span><span class="c1"># print most recent + remove it</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>cb<span class="w"> </span>pop<span class="w"> </span>--kind<span class="w"> </span>code<span class="w">   </span><span class="c1"># most recent code item, remove it</span>
 </span></code></pre></div>
-<p>Run at startup and on every capture. Image files referenced by deleted rows are unlinked from disk by the caller.</p>
-<h2 id="file-system-layout">File-system layout<a class="headerlink" href="#file-system-layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>~/Library/Application Support/com.clipboarder.app/
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>├── clipboarder.sqlite       # data + FTS index
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>├── clipboarder.sqlite-wal   # WAL
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>├── clipboarder.sqlite-shm   # shared memory file
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>├── settings.json
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>├── images/&lt;hash16&gt;.png      # captured PNG payloads
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>├── app_icons/&lt;bundle&gt;.png   # cached app icons
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>└── url_meta/&lt;hash12&gt;.json   # cached OG metadata
+<h3 id="stream-new-copies-into-a-log">Stream new copies into a log<a class="headerlink" href="#stream-new-copies-into-a-log" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cb<span class="w"> </span>watch<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/clipboard.log.jsonl<span class="w"> </span><span class="p">&amp;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># every clipboard event becomes one JSON line</span>
 </span></code></pre></div>
-<h2 id="migrations">Migrations<a class="headerlink" href="#migrations" title="Permanent link">&para;</a></h2>
-<p>The current schema is forward-only. New columns are added via <code>ALTER TABLE ... ADD COLUMN ... DEFAULT NULL</code> calls wrapped in <code>let _ = ...</code> (so the column-already-exists error is silently ignored). When a column needs to be split or removed, we'll introduce a real migration ledger (probably as a <code>schema_version</code> table) at the same time.</p>
+<h3 id="tag-what-your-scripts-add">Tag what your scripts add<a class="headerlink" href="#tag-what-your-scripts-add" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;build </span><span class="k">$(</span>git<span class="w"> </span>rev-parse<span class="w"> </span>--short<span class="w"> </span>HEAD<span class="k">)</span><span class="s2"> ok&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cb<span class="w"> </span>cp<span class="w"> </span>--source<span class="w"> </span>build-script
+</span></code></pre></div>
+<h2 id="how-it-pairs-with-pbcopypbpaste">How it pairs with <code>pbcopy</code>/<code>pbpaste</code><a class="headerlink" href="#how-it-pairs-with-pbcopypbpaste" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>clipboarder</th>
+<th>macOS built-in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stdin → clipboard</td>
+<td><code>cb cp</code></td>
+<td><code>pbcopy</code></td>
+</tr>
+<tr>
+<td>clipboard → stdout</td>
+<td><code>cb p</code> (also history-aware!)</td>
+<td><code>pbpaste</code></td>
+</tr>
+<tr>
+<td>Persist for later</td>
+<td><code>cb cp</code></td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Search history</td>
+<td><code>cb p --grep …</code></td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Filter by kind</td>
+<td><code>cb p --kind url</code></td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Multi-paste workflows</td>
+<td><code>cb p N</code></td>
+<td>✗</td>
+</tr>
+</tbody>
+</table>
+<p><code>cb cp</code> is a drop-in <code>pbcopy</code> replacement for users who want every copy to be searchable forever. Aliases play well in <code>.zshrc</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Optional: alias pbcopy + pbpaste to the clipboarder versions</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">pbcopy</span><span class="o">=</span><span class="s1">&#39;cb cp&#39;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nb">alias</span><span class="w"> </span><span class="nv">pbpaste</span><span class="o">=</span><span class="s1">&#39;cb p&#39;</span>
+</span></code></pre></div>
+<h2 id="for-ai-agents">For AI agents<a class="headerlink" href="#for-ai-agents" title="Permanent link">&para;</a></h2>
+<p>The Claude skill at <a href="https://github.com/shakedaskayo/clipboarder/blob/main/agents/.claude/skills/clipboarder/SKILL.md"><code>SKILL.md</code></a> leans on these specifically — <code>cb p --grep</code> is recommended over a multi-step <code>search → show</code> flow. One-liner installer:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>~/.claude/skills/clipboarder<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span>-o<span class="w"> </span>~/.claude/skills/clipboarder/SKILL.md
+</span></code></pre></div>
+<p>Then Claude Code auto-loads the skill on every session — no config edit, no plugin install. Same one-liner is in the <a href="../../agents/">Agents Integration</a> page.</p>
 
 
 
@@ -2032,7 +2202,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../classification/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Classification">
+          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2042,20 +2212,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Classification
+                Overview
               </div>
             </div>
           </a>
         
         
           
-          <a href="../paste-back/" class="md-footer__link md-footer__link--next" aria-label="Next: Paste-back">
+          <a href="../list/" class="md-footer__link md-footer__link--next" aria-label="Next: list">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Paste-back
+                list
               </div>
             </div>
             <div class="md-footer__button md-icon">
