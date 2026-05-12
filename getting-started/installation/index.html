@@ -613,10 +613,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#first-launch" class="md-nav__link">
+  <a href="#first-launch-guided-permission-grant" class="md-nav__link">
     <span class="md-ellipsis">
       
-        First launch
+        First launch — guided permission grant
       
     </span>
   </a>
@@ -1351,10 +1351,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#first-launch" class="md-nav__link">
+  <a href="#first-launch-guided-permission-grant" class="md-nav__link">
     <span class="md-ellipsis">
       
-        First launch
+        First launch — guided permission grant
       
     </span>
   </a>
@@ -1474,14 +1474,14 @@
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>open<span class="w"> </span>src-tauri/target/release/bundle/dmg/
 </span></code></pre></div>
 <p>See <a href="../../contributing/">Contributing</a> for the full development setup.</p>
-<h2 id="first-launch">First launch<a class="headerlink" href="#first-launch" title="Permanent link">&para;</a></h2>
-<p>On first launch macOS will request <strong>Accessibility permission</strong>. This is needed so clipboarder can synthesize <code>⌘V</code> into the previously-focused app after you select an item.</p>
-<p>To grant:</p>
+<h2 id="first-launch-guided-permission-grant">First launch — guided permission grant<a class="headerlink" href="#first-launch-guided-permission-grant" title="Permanent link">&para;</a></h2>
+<p>On first launch clipboarder shows an in-app banner asking for <strong>Accessibility permission</strong>. This is what lets it synthesize <code>⌘V</code> into your previously-focused app after you pick an item:</p>
 <ol>
-<li>Open <strong>System Settings</strong> → <strong>Privacy &amp; Security</strong> → <strong>Accessibility</strong></li>
-<li>Toggle <code>clipboarder</code> on (or click <code>+</code> and add it from <code>/Applications</code>)</li>
+<li>Click <strong>Open Settings</strong> in the banner → macOS jumps straight to the right pane</li>
+<li>Toggle <code>clipboarder</code> on</li>
+<li>Switch back to clipboarder — the banner auto-detects within ~2 seconds and turns green</li>
 </ol>
-<p>Until you grant it, <em>Copy to clipboard</em> still works — but paste-back won't fire automatically and you'll have to press <code>⌘V</code> yourself.</p>
+<p>You only do this once. Without it, <em>Copy to clipboard</em> still works, but the auto-paste step won't fire (you'd have to press <code>⌘V</code> yourself).</p>
 <h2 id="uninstall">Uninstall<a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>rm<span class="w"> </span>-rf<span class="w"> </span>/Applications/clipboarder.app
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>rm<span class="w"> </span>-rf<span class="w"> </span>~/Library/Application<span class="se">\ </span>Support/com.clipboarder.app
