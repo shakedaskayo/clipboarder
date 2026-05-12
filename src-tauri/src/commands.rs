@@ -141,6 +141,16 @@ pub fn get_app_icon(state: State<AppState>, bundle_id: String) -> CmdResult<Opti
 }
 
 #[tauri::command]
+pub fn initial_view() -> CmdResult<String> {
+    Ok(std::env::var("CLIPBOARDER_INITIAL_VIEW").unwrap_or_else(|_| "search".into()))
+}
+
+#[tauri::command]
+pub fn initial_filter() -> CmdResult<String> {
+    Ok(std::env::var("CLIPBOARDER_INITIAL_FILTER").unwrap_or_else(|_| "all".into()))
+}
+
+#[tauri::command]
 pub fn open_url(app: AppHandle, url: String) -> CmdResult<()> {
     use tauri_plugin_opener::OpenerExt;
     app.opener()

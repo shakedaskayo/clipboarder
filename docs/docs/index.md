@@ -21,6 +21,10 @@ curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/insta
 
 ---
 
+![Main view](assets/screenshots/main.png)
+
+---
+
 ## Why clipboarder
 
 <div class="feature-grid" markdown>
@@ -56,6 +60,30 @@ All data stays local at `~/Library/Application Support/com.clipboarder.app/`. No
 </div>
 
 </div>
+
+---
+
+## A preview for every kind
+
+=== "Repos"
+
+    ![Repo card](assets/screenshots/repo.png)
+
+=== "Music"
+
+    ![Spotify card](assets/screenshots/music.png)
+
+=== "Colors"
+
+    ![Color swatch](assets/screenshots/color.png)
+
+=== "Code"
+
+    ![Code preview](assets/screenshots/code.png)
+
+=== "Settings"
+
+    ![Settings panel](assets/screenshots/settings.png)
 
 ---
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { ClipItem } from "./lib/types";
+import { invoke } from "@tauri-apps/api/core";
 import { searchItems, pasteItem, hideWindow } from "./lib/api";
 import { SearchIcon, GearIcon } from "./lib/icons";
 import { Row } from "./components/Row";
@@ -44,6 +45,18 @@ export default function App() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { refreshCounts(); }, [refreshCounts, items.length]);
+
+  // Honor CLIPBOARDER_INITIAL_VIEW / _FILTER env vars (used by screenshot tooling).
+  useEffect(() => {
+    invoke<string>("initial_view").then(v => {
+      if (v === "settings") setView("settings");
+    }).catch(() => {});
+    invoke<string>("initial_filter").then(f => {
+      const valid = ["all", "pinned", "text", "url", "email", "code", "color",
+        "image", "file", "pdf", "music", "video", "repo"];
+      if (valid.includes(f) && f !== "all") setFilter(f as Filter);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const un1 = listen("clipboard:new", () => { refresh(); });

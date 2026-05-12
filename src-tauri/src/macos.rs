@@ -29,9 +29,12 @@ pub fn configure_window(win: &WebviewWindow) {
         ns_window.setCollectionBehavior_(behavior);
         // Auto-hide the moment the user clicks into any other app. AppKit
         // handles this transition synchronously — no perceptible delay.
-        // Use objc::runtime::YES (BOOL = 1) so the bridge knows the exact width.
-        let yes: objc::runtime::BOOL = objc::runtime::YES;
-        let _: () = msg_send![ns_window, setHidesOnDeactivate: yes];
+        // Honor CLIPBOARDER_NO_AUTO_HIDE so we can capture screenshots without
+        // the window vanishing mid-capture.
+        if std::env::var("CLIPBOARDER_NO_AUTO_HIDE").is_err() {
+            let yes: objc::runtime::BOOL = objc::runtime::YES;
+            let _: () = msg_send![ns_window, setHidesOnDeactivate: yes];
+        }
     }
 }
 

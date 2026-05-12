@@ -111,8 +111,10 @@ pub fn run() {
             macos::configure_window(&win);
 
             let hide_handle = app_handle.clone();
+            let no_auto_hide = std::env::var("CLIPBOARDER_NO_AUTO_HIDE").is_ok();
             win.on_window_event(move |event| match event {
                 WindowEvent::Focused(false) => {
+                    if no_auto_hide { return; }
                     if let Some(w) = hide_handle.get_webview_window("main") {
                         let _ = w.hide();
                     }
@@ -129,6 +131,15 @@ pub fn run() {
             let _ = win.show();
             let _ = win.set_focus();
             let _ = app_handle.emit("window:shown", ());
+
+            // Open straight into Settings when launched for screenshots.
+            if std::env::var("CLIPBOARDER_INITIAL_VIEW").as_deref() == Ok("settings") {
+                let handle = app_handle.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(2000));
+                    let _ = handle.emit("nav:settings", ());
+                });
+            }
 
             Ok(())
         })
@@ -147,6 +158,8 @@ pub fn run() {
             commands::fetch_file_bytes,
             commands::fetch_url_metadata,
             commands::open_url,
+            commands::initial_view,
+            commands::initial_filter,
         ])
         .run(tauri::generate_context!())
         .expect("error while running clipboarder");

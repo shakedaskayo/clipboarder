@@ -24,3 +24,4 @@ docs/site
 # Python / pip user installs
 __pycache__/
 *.pyc
+tsconfig.tsbuildinfo

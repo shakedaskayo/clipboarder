@@ -28,15 +28,49 @@ curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/insta
 
 ## Screenshots
 
-### Smart capture, rich previews
+### The list
 
-clipboarder classifies every copy at the moment it happens — and renders each kind with a preview that actually helps. Colors get a swatch and HEX/RGB/HSL. URLs get a parsed host and favicon-style tile. Code gets a syntax-styled block. PDFs render inline. Music and video links from Spotify, Apple Music, YouTube, SoundCloud, etc. show as branded cards.
+Every copy is classified, captured with its source-app icon, and ranked by recency + bm25. Filter chips above let you jump straight to Links, Repos, Code, Colors, Music, Video, PDFs.
 
 <p align="center">
   <img src="docs/docs/assets/screenshots/main.png" alt="Main view" width="100%">
 </p>
 
-### Settings — every knob you'd expect
+### Rich previews per kind
+
+#### Repos (GitHub / GitLab / Bitbucket / Codeberg)
+
+Detect `<host>/<owner>/<repo>` URLs, fetch the OpenGraph card from the host, and render owner/repo with the right resource type — *Repository*, *Pull request #N*, *Issue #N*, *Commit \<sha\>*, *Release \<tag\>*, *File*, *Folder*, *Wiki*, *Actions*.
+
+<p align="center">
+  <img src="docs/docs/assets/screenshots/repo.png" alt="Repo card with GitHub OG metadata" width="100%">
+</p>
+
+#### Music / video
+
+Spotify, Apple Music, YouTube + YouTube Music, SoundCloud, Bandcamp, Vimeo, Twitch — each gets a branded card with platform glow and a one-click *Open in platform* button.
+
+<p align="center">
+  <img src="docs/docs/assets/screenshots/music.png" alt="Spotify music card" width="100%">
+</p>
+
+#### Colors
+
+Hex / rgb / hsl in any form gets a big swatch plus all three notations side-by-side for easy copy-paste into any tool.
+
+<p align="center">
+  <img src="docs/docs/assets/screenshots/color.png" alt="Color swatch with HEX/RGB/HSL" width="100%">
+</p>
+
+#### Code
+
+Heuristic-detected code (with language guess) renders in a styled monospace block. Shell one-liners get tagged `shell`.
+
+<p align="center">
+  <img src="docs/docs/assets/screenshots/code.png" alt="Code preview" width="100%">
+</p>
+
+### Settings
 
 Rebind the hotkey by recording any combo. Launch at login. Cap history size or auto-clear after N days. Add per-app exclusions (e.g. 1Password) so sensitive clipboard activity is never captured.
 
