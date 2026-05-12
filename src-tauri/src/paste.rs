@@ -33,8 +33,12 @@ pub fn simulate_paste() -> Result<()> {
     };
     use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 
-    // Give the window time to actually hide before posting events.
-    thread::sleep(Duration::from_millis(60));
+    // Give macOS time to (a) hide our window, (b) deactivate our app, and
+    // (c) hand keyboard focus to the previously-frontmost app before the
+    // synthesized ⌘V hits the event tap. 60 ms was the empirical minimum on
+    // M-series; 150 ms is generously safe on Intel + slower machines while
+    // still feeling instant.
+    thread::sleep(Duration::from_millis(150));
 
     let src = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
         .map_err(|_| anyhow::anyhow!("CGEventSource create"))?;

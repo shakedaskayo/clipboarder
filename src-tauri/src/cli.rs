@@ -30,6 +30,7 @@ pub const SUBCOMMANDS: &[&str] = &[
     "add", "ingest", "pin", "unpin", "star", "unstar",
     "delete", "rm", "clear", "copy", "stats", "watch",
     "cp", "pipe", "p", "paste", "last", "pop",
+    "doctor", "test-paste",
     "help", "-h", "--help", "-V", "--version",
 ];
 
@@ -198,6 +199,24 @@ pub enum Command {
         #[arg(short, long)]
         kind: Option<String>,
     },
+
+    /// Diagnose paste-back / install issues. Prints permission and process state.
+    Doctor,
+
+    /// Write a marker string to the macOS clipboard and synthesize ⌘V.
+    /// Useful to confirm paste-back works in isolation — run this in your
+    /// terminal; if you see the marker appear at the prompt, paste-back is
+    /// working. If only the clipboard updates but no marker appears, the
+    /// CGEventPost path is being silently denied.
+    #[command(name = "test-paste")]
+    TestPaste {
+        /// What to write to the clipboard before synthesizing ⌘V.
+        #[arg(short, long, default_value = "clipboarder paste-back ✓")]
+        marker: String,
+        /// Sleep duration in milliseconds between hide and ⌘V (default: 250 — generous).
+        #[arg(short, long, default_value_t = 250)]
+        delay_ms: u64,
+    },
 }
 
 /// Entry point invoked from main.rs when argv looks like CLI mode.
@@ -231,7 +250,107 @@ pub fn run() -> Result<()> {
             cmd_paste(&storage, n, kind, grep, copy, all, json)
         }
         Command::Pop { kind } => cmd_pop(&mut storage, kind),
+        Command::Doctor => cmd_doctor(&storage),
+        Command::TestPaste { marker, delay_ms } => cmd_test_paste(&marker, delay_ms),
     }
+}
+
+fn cmd_test_paste(marker: &str, delay_ms: u64) -> Result<()> {
+    println!("--- paste-back self-test ---");
+    println!();
+    println!("1. Writing {:?} to the macOS clipboard…", marker);
+    write_clipboard_text(marker)?;
+    println!("   ✓ clipboard updated");
+
+    println!();
+    println!("2. Waiting {} ms then synthesizing ⌘V…", delay_ms);
+    println!("   Look at YOUR TERMINAL PROMPT after this command exits.");
+    println!("   If the marker shows up there, paste-back is working.");
+    println!();
+    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+
+    #[cfg(target_os = "macos")]
+    {
+        if !crate::macos::is_accessibility_trusted() {
+            println!("\x1b[31m✗\x1b[0m Accessibility is NOT granted to this binary.");
+            println!("   The clipboard was updated, but ⌘V can't be synthesized.");
+            println!("   Run `clipboarder doctor` for the grant instructions.");
+            std::process::exit(1);
+        }
+        match crate::paste::simulate_paste() {
+            Ok(()) => println!("\x1b[32m✓\x1b[0m simulate_paste returned Ok"),
+            Err(e) => {
+                eprintln!("\x1b[31m✗\x1b[0m simulate_paste failed: {e:#}");
+                std::process::exit(1);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn cmd_doctor(storage: &Storage) -> Result<()> {
+    let ok = "\x1b[32m✓\x1b[0m";
+    let warn = "\x1b[33m⚠\x1b[0m";
+    let bad = "\x1b[31m✗\x1b[0m";
+
+    println!("clipboarder doctor");
+    println!("==================\n");
+
+    // 1) Data dir / DB
+    let dir = data_dir();
+    if dir.exists() {
+        println!("{ok} data dir       {}", dir.display());
+    } else {
+        println!("{bad} data dir       {} (missing — has the GUI ever launched?)", dir.display());
+    }
+
+    // 2) Item count via the existing storage handle
+    let total = storage.search("", "all", 1_000_000).map(|v| v.len()).unwrap_or(0);
+    println!("{ok} history items  {total}");
+
+    // 3) GUI process running?
+    let running = process_running("clipboarder");
+    if running {
+        println!("{ok} GUI process    running");
+    } else {
+        println!("{warn} GUI process    not running — only the CLI can read history right now");
+        println!("                       launch with: open -a clipboarder");
+    }
+
+    // 4) Accessibility permission (for paste-back synthesis)
+    #[cfg(target_os = "macos")]
+    {
+        let trusted = crate::macos::is_accessibility_trusted();
+        if trusted {
+            println!("{ok} accessibility  granted to this binary");
+        } else {
+            println!("{bad} accessibility  NOT granted to this binary");
+            println!();
+            println!("    Paste-back needs Accessibility permission to synthesize ⌘V");
+            println!("    into the previously-focused app after you press Enter on a row.");
+            println!();
+            println!("    Fix:");
+            println!("      1. Open System Settings → Privacy & Security → Accessibility");
+            println!("      2. If `clipboarder` is listed, toggle it OFF, then back ON");
+            println!("         (this re-grants permission after a binary update)");
+            println!("      3. If it's not listed, click + and add:");
+            println!("           /Applications/clipboarder.app");
+            println!("      4. Re-run `clipboarder doctor` — this line should turn green");
+        }
+    }
+
+    // 5) Hotkey registration check is hard from CLI (the GUI owns it). Hint instead.
+    println!();
+    println!("Hotkey  default ⌘⇧V — change in Settings (gear in footer, or ⌘,)");
+    println!("Docs    https://shakedaskayo.github.io/clipboarder/");
+
+    Ok(())
+}
+
+fn process_running(name: &str) -> bool {
+    use std::process::Command;
+    let output = Command::new("pgrep").args(["-x", name]).output();
+    matches!(output, Ok(o) if !o.stdout.is_empty())
 }
 
 fn data_dir() -> PathBuf {
