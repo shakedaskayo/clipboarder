@@ -41,6 +41,22 @@ The CLI is on the user's PATH as both `clipboarder` (full name) and `cb` (short 
 | `cb p --json` | Full row as JSON instead of just the content body. |
 | `cb pop` | Print + delete the most recent item. |
 
+**Agent-friendly flags (combine freely with the commands above):**
+
+| Flag | Effect | When to use |
+|------|--------|-------------|
+| `--compact` | Minimal JSON: `{id, kind, content, meta}` only. ~40% fewer tokens than the full row. | **Default to this for any agent-facing call.** |
+| `--max-bytes N` | Truncate each item's content to N bytes at a UTF-8 char boundary, append `…`. | When dumping multiple items into your context. |
+| `--since 30s\|5m\|1h\|2d\|1w` | Only items used within the window. | "What did I just copy" / "recent" queries. |
+| `--no-secrets` | Items that look like API keys / OAuth tokens / JWTs / private keys are replaced with `[redacted: <kind>]`. | **Always set this** unless the user explicitly asked you to see the raw content. |
+| `--snippet N` (search / `p --grep` only) | Replace content with an N-byte window around the matching token. | When the user wants context, not the whole snippet. |
+
+A typical agent-facing call combines several:
+
+```bash
+cb p --grep "react" --kind repo --since 1d --no-secrets --compact --max-bytes 200 --json
+```
+
 **Structured queries:**
 
 | Command | Purpose | Read-only? |
@@ -156,11 +172,11 @@ cb p --json
 
 ## Privacy & best practices
 
-- **Don't dump the whole history into your context.** Use `--limit` and `--kind` filters. Default to 10 items max unless the user asks for more.
-- **Prefer `search` over `list`** when the user has a concrete query — bm25 ranking returns relevant items in 1–2 ms.
-- **Don't echo passwords or secrets back to the user.** If you see an item that looks like a credential (long random string, key=value with sensitive name, JWT), summarize ("found a token-like item") instead of pasting it. The user already has a password manager — you're not it.
+- **Default to `--no-secrets --compact --max-bytes 400`** on every read. The clipboarder CLI does the secret detection for you (API keys, OAuth tokens, JWTs, private key blocks, `password=` patterns); just trust the flag.
+- **Don't dump the whole history into your context.** Use `--limit` and `--kind` filters. Default to 10 items max unless the user explicitly asks for more.
+- **Prefer `cb p --grep`** over `cb search` + `cb show`. One round-trip instead of two, and you get just the most relevant content rather than the full row.
 - **Excluded apps are respected at capture time.** Anything from apps the user added to Privacy exclusions (e.g. 1Password) was never captured, so you can trust the history to be intentional.
-- **`add` is intentional**: only ingest content the user explicitly asked you to save. Don't auto-ingest summaries or intermediate work.
+- **`add` is intentional**: only ingest content the user explicitly asked you to save. Don't auto-ingest summaries or intermediate work. Always pass `--source <your name>` so the user can see what came from you in the GUI.
 
 ## Error codes
 

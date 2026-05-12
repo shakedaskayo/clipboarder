@@ -4,6 +4,7 @@ mod clipboard;
 mod commands;
 pub mod cli;
 mod paste;
+pub mod secrets;
 mod settings;
 pub mod storage;
 mod url_meta;

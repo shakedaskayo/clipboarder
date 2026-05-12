@@ -175,60 +175,91 @@ clipboarder search "github" --json
 clipboarder show 17 --json
 ```
 
+## Agent-friendly flags
+
+Combine these freely with `cb list`, `cb search`, and `cb p`. They're the difference between dumping everything into the agent's context and giving it just the relevant slice.
+
+| Flag | Effect |
+|------|--------|
+| `--compact` | Minimal JSON `{id, kind, content, meta}`. ~40% fewer tokens. |
+| `--max-bytes N` | Truncate content to N bytes at a UTF-8 char boundary, append `…`. |
+| `--since 30s\|5m\|1h\|2d\|1w` | Only items used within the window. |
+| `--no-secrets` | Items that look like API keys / JWTs / private keys → `[redacted: <kind>]`. Built-in detection covers OpenAI, Anthropic, GitHub PATs, AWS, Slack, GitLab, Google, Stripe, Twilio, JWTs, PEM blocks, and `password=`/`token=`/`api_key=` patterns. |
+| `--snippet N` | (search / `p --grep` only) Replace content with an N-byte window around the match. |
+
+Typical agent call:
+
+```bash
+cb p --grep "react" --kind repo --since 1d --no-secrets --compact --max-bytes 200 --json
+```
+
 ## Best practices
 
-### 1. Cap the result set aggressively
+### 1. Always set `--no-secrets`
 
-Don't pass `--limit 1000` "just in case". The agent's context window is precious.
+Unless the user explicitly asks for the raw content of a credential, pass `--no-secrets`. Tokens get replaced with `[redacted: anthropic api key]` style placeholders so you know one was there but can't accidentally leak it.
+
+### 2. Cap the result set aggressively
+
+Don't pass `--limit 1000` "just in case". Agent context windows are precious.
 
 - For browsing: 5–10 items
 - For targeted search: 3–5 items
-- For "show me everything of kind X": 20 items, then ask the user if they want more
+- For "show me everything of kind X": 20 items, then ask
 
-### 2. Filter by kind whenever possible
+### 3. Prefer `cb p --grep` over `cb search` + `cb show`
 
-`--kind repo` returns only GitHub-family URLs. `--kind code` only code. The cost is the same — but the relevance is much higher.
+One round-trip instead of two. `--snippet` gives you just the matching context.
 
-### 3. Prefer `search` over `list` when there's a query term
+### 4. Filter by kind whenever possible
 
-bm25 ranking surfaces relevant items even if they're old. `list` just gives recency.
+`--kind repo` only GitHub-family. `--kind code` only code. Same query cost, much higher relevance.
 
-### 4. Don't echo secrets back
+### 5. Truncate aggressively with `--max-bytes`
 
-If a returned item looks like an API key, JWT, password, or other credential:
+A 5 KB code item costs ~1500 tokens. With `--max-bytes 400` it costs ~120 and you still see what kind of code it is.
 
-- Don't put it in your reply to the user
-- Don't include it in tool inputs to other tools
-- Summarize: "Found a token-shaped item from <source_app>, id <id>" — let the user explicitly ask to see it.
+### 6. Don't auto-ingest
 
-Heuristics for secret-like content:
+`cb cp` / `cb add` is for explicit "save this for me" intent. Don't ingest intermediate work the user didn't ask to save.
 
-- Looks like base64/hex and is > 32 chars
-- Contains `sk-`, `pk_`, `xoxb-`, `xoxp-`, `ghp_`, `github_pat_` prefixes
-- Matches `key=`, `token=`, `password=`, `secret=` patterns
-- A row's source app was a password manager (`com.1password.*`, `com.bitwarden.*`, `com.agilebits.*`, `com.lastpass.*`) — though these are usually already excluded by the user's privacy settings.
-
-### 5. Don't auto-ingest
-
-`clipboarder add` is for explicit "save this for me" intent. Don't ingest intermediate work, scratch outputs, or anything the user didn't ask to save.
-
-### 6. Source-tag your ingestion
+### 7. Source-tag your ingestion
 
 ```bash
-clipboarder add --source "claude" --json
+echo "..." | cb cp --source "claude" --json
 ```
 
-The `--source` field appears in the row meta in the GUI, so the user can see which agent added which items.
+The `--source` shows up in the GUI row meta — the user can see which agent added what.
 
-### 7. Tail with `watch` for ambient awareness
-
-If your agent is long-running and wants to react to new copies as they happen:
+### 8. Tail with `watch` for ambient awareness
 
 ```bash
-clipboarder watch --kind url
+cb watch --kind url
 ```
 
-Prints one JSON line per new item, indefinitely. Polls the DB every 500 ms.
+JSONL on stdout, indefinitely. Polls the DB every 500 ms.
+
+## Performance
+
+Measured on M2 Pro, 10,000-item DB ([scripts/bench.sh](https://github.com/shakedaskayo/clipboarder/blob/main/scripts/bench.sh)):
+
+| Command | p50 | p99 |
+|---------|-----|-----|
+| `cb list --limit 10` | 6.7 ms | 7.5 ms |
+| `cb search "<query>"` | 5.2 ms | 5.7 ms |
+| `cb p --grep "<query>" --kind repo` | 4.9 ms | 5.2 ms |
+| `cb stats --json` | 14.5 ms | 15.3 ms |
+
+The 4–5 ms baseline is Rust binary cold-start; actual SQL query time is sub-millisecond.
+
+### Tracing slow queries
+
+Set `CLIPBOARDER_TRACE=1` to log every SQL query + elapsed time to stderr:
+
+```bash
+$ CLIPBOARDER_TRACE=1 cb search "react" --json 2>&1 | head -3
+[trace] search 0.33ms — SELECT i.id, i.kind, i.content, i.preview, i.meta, i.source_app, i.source_app_id, i.image_path, i.pinned, i.size, i.created_at, i.last_used_at FROM items_fts f JOIN items i ON i.id = f.rowid WHERE items_fts MATCH ?1 ORDER BY i.pinned DESC, bm25(items_fts) ASC, i.last_used_at DESC LIMIT ?3
+```
 
 ## Security model
 

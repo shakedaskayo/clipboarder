@@ -21,6 +21,7 @@ use clap::{Parser, Subcommand};
 use serde::Serialize;
 
 use crate::classify;
+use crate::secrets;
 use crate::storage::{ClipItem, NewItem, Storage};
 
 /// Command vocabulary the dual-mode dispatch in main.rs recognizes. Listed
@@ -54,6 +55,40 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Flags shared by every read command. They're optional and zero-impact when
+/// not set, but they're the difference between dumping the entire clipboard
+/// into an agent's context and giving it just the relevant slice.
+#[derive(Debug, Clone, clap::Args)]
+pub struct AgentOpts {
+    /// Only include items younger than this duration. Accepts e.g. `30s`,
+    /// `5m`, `2h`, `3d`, `1w`.
+    #[arg(long, value_parser = parse_duration_arg)]
+    pub since: Option<i64>,
+
+    /// Truncate each item's content to N bytes (at a UTF-8 char boundary).
+    /// Helpful when you're going to put the result into a token budget.
+    #[arg(long, value_name = "N")]
+    pub max_bytes: Option<usize>,
+
+    /// Drop items that look like API keys, OAuth tokens, JWTs, or other
+    /// credentials. Items are kept but the content is replaced with a
+    /// `[redacted: <kind>]` placeholder so the agent knows something was
+    /// hidden.
+    #[arg(long)]
+    pub no_secrets: bool,
+
+    /// Replace each item's content with a small window around the first
+    /// matching token of the query. Implies `--max-bytes` behavior. Only
+    /// meaningful with `cb search` or `cb p --grep`.
+    #[arg(long, value_name = "BYTES")]
+    pub snippet: Option<usize>,
+
+    /// Emit a minimal JSON shape (`{id, kind, content, meta}`) instead of
+    /// the full row. Reduces tokens ~40% on average.
+    #[arg(long)]
+    pub compact: bool,
+}
+
 #[derive(Subcommand)]
 pub enum Command {
     /// List most recent items.
@@ -68,6 +103,8 @@ pub enum Command {
         /// Emit JSON instead of a human table.
         #[arg(long)]
         json: bool,
+        #[command(flatten)]
+        agent: AgentOpts,
     },
 
     /// Full-text search the clipboard history.
@@ -81,6 +118,8 @@ pub enum Command {
         kind: Option<String>,
         #[arg(long)]
         json: bool,
+        #[command(flatten)]
+        agent: AgentOpts,
     },
 
     /// Print one item's full content.
@@ -192,6 +231,8 @@ pub enum Command {
         /// Output JSON row instead of just the content body.
         #[arg(long)]
         json: bool,
+        #[command(flatten)]
+        agent: AgentOpts,
     },
 
     /// Print the most recent item *and* delete it from history.
@@ -228,9 +269,11 @@ pub fn run() -> Result<()> {
     let mut storage = Storage::open(&db_path).context("open clipboarder database")?;
 
     match cli.command {
-        Command::List { limit, kind, json } => cmd_list(&storage, limit, kind, json),
-        Command::Search { query, limit, kind, json } => {
-            cmd_search(&storage, &query, limit, kind, json)
+        Command::List { limit, kind, json, agent } => {
+            cmd_list(&storage, limit, kind, json, &agent)
+        }
+        Command::Search { query, limit, kind, json, agent } => {
+            cmd_search(&storage, &query, limit, kind, json, &agent)
         }
         Command::Show { id, json } => cmd_show(&storage, id, json),
         Command::Add { text, kind, copy, source, json } => {
@@ -246,13 +289,117 @@ pub fn run() -> Result<()> {
         Command::Cp { kind, source, no_clipboard, json } => {
             cmd_add(&mut storage, None, kind, !no_clipboard, Some(source), json)
         }
-        Command::P { n, kind, grep, copy, all, json } => {
-            cmd_paste(&storage, n, kind, grep, copy, all, json)
+        Command::P { n, kind, grep, copy, all, json, agent } => {
+            cmd_paste(&storage, n, kind, grep, copy, all, json, &agent)
         }
         Command::Pop { kind } => cmd_pop(&mut storage, kind),
         Command::Doctor => cmd_doctor(&storage),
         Command::TestPaste { marker, delay_ms } => cmd_test_paste(&marker, delay_ms),
     }
+}
+
+// ── duration parser ─────────────────────────────────────────────────────────
+
+/// Parse `30s`, `5m`, `2h`, `3d`, `1w` into milliseconds (for last_used_at
+/// cutoff). Used by `--since`.
+pub fn parse_duration_ms(s: &str) -> Option<i64> {
+    let s = s.trim();
+    if s.is_empty() { return None; }
+    let unit = s.chars().last()?;
+    let num_part = &s[..s.len() - unit.len_utf8()];
+    let n: i64 = num_part.parse().ok()?;
+    let mult: i64 = match unit {
+        's' => 1_000,
+        'm' => 60_000,
+        'h' => 3_600_000,
+        'd' => 86_400_000,
+        'w' => 604_800_000,
+        _ => return None,
+    };
+    Some(n * mult)
+}
+
+fn parse_duration_arg(s: &str) -> Result<i64, String> {
+    parse_duration_ms(s).ok_or_else(|| {
+        format!("expected duration like `30s`, `5m`, `2h`, `3d`, `1w`; got `{s}`")
+    })
+}
+
+// ── content transforms ─────────────────────────────────────────────────────
+
+fn truncate_at_char_boundary(s: &str, max: usize) -> String {
+    if s.len() <= max { return s.to_string(); }
+    let mut end = max;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…", &s[..end])
+}
+
+fn snippet_around(content: &str, query: &str, window: usize) -> String {
+    let lower = content.to_lowercase();
+    let token = query
+        .split_whitespace()
+        .find(|t| !t.is_empty())
+        .unwrap_or("");
+    if token.is_empty() {
+        return truncate_at_char_boundary(content, window.saturating_mul(2));
+    }
+    let needle = token.to_lowercase();
+    if let Some(idx) = lower.find(&needle) {
+        let half = window / 2;
+        let mut start = idx.saturating_sub(half);
+        while start > 0 && !content.is_char_boundary(start) { start -= 1; }
+        let mut end = (idx + needle.len() + half).min(content.len());
+        while end < content.len() && !content.is_char_boundary(end) { end += 1; }
+        let prefix = if start > 0 { "…" } else { "" };
+        let suffix = if end < content.len() { "…" } else { "" };
+        return format!("{prefix}{}{suffix}", &content[start..end]);
+    }
+    truncate_at_char_boundary(content, window.saturating_mul(2))
+}
+
+#[derive(serde::Serialize)]
+struct CompactItem<'a> {
+    id: i64,
+    kind: &'a str,
+    content: &'a str,
+    meta: Option<&'a str>,
+}
+
+/// Apply --since, --no-secrets, --snippet, --max-bytes to a result set.
+fn apply_agent_opts<'a>(
+    items: &'a [ClipItem],
+    grep: Option<&str>,
+    opts: &AgentOpts,
+) -> Vec<ClipItem> {
+    let now = chrono::Utc::now().timestamp_millis();
+    items
+        .iter()
+        .filter(|it| match opts.since {
+            Some(ms) => (now - it.last_used_at) <= ms,
+            None => true,
+        })
+        .map(|it| {
+            let mut it = it.clone();
+            if opts.no_secrets {
+                if let Some(kind) = secrets::detect(&it.content) {
+                    it.content = format!("[redacted: {}]", kind.label());
+                }
+            }
+            if let Some(window) = opts.snippet {
+                if let Some(q) = grep {
+                    it.content = snippet_around(&it.content, q, window);
+                }
+            }
+            if let Some(max) = opts.max_bytes {
+                if it.content.len() > max {
+                    it.content = truncate_at_char_boundary(&it.content, max);
+                }
+            }
+            it
+        })
+        .collect()
 }
 
 fn cmd_test_paste(marker: &str, delay_ms: u64) -> Result<()> {
@@ -365,15 +512,30 @@ fn normalize_kind(k: Option<String>) -> String {
 
 // ── list & search ────────────────────────────────────────────────────────────
 
-fn cmd_list(storage: &Storage, limit: i64, kind: Option<String>, json: bool) -> Result<()> {
+fn cmd_list(
+    storage: &Storage,
+    limit: i64,
+    kind: Option<String>,
+    json: bool,
+    agent: &AgentOpts,
+) -> Result<()> {
     let items = storage.search("", &normalize_kind(kind), limit)?;
-    emit_items(&items, json);
+    let items = apply_agent_opts(&items, None, agent);
+    emit_items(&items, json, agent.compact);
     Ok(())
 }
 
-fn cmd_search(storage: &Storage, query: &str, limit: i64, kind: Option<String>, json: bool) -> Result<()> {
+fn cmd_search(
+    storage: &Storage,
+    query: &str,
+    limit: i64,
+    kind: Option<String>,
+    json: bool,
+    agent: &AgentOpts,
+) -> Result<()> {
     let items = storage.search(query, &normalize_kind(kind), limit)?;
-    emit_items(&items, json);
+    let items = apply_agent_opts(&items, Some(query), agent);
+    emit_items(&items, json, agent.compact);
     Ok(())
 }
 
@@ -560,15 +722,17 @@ fn cmd_paste(
     also_copy: bool,
     all: bool,
     json: bool,
+    agent: &AgentOpts,
 ) -> Result<()> {
     if n == 0 {
         eprintln!("position N must be >= 1");
         std::process::exit(2);
     }
-    let query = grep.unwrap_or_default();
+    let query = grep.clone().unwrap_or_default();
     let kind_str = normalize_kind(kind);
     let limit = if all { 10_000 } else { n as i64 };
-    let items = storage.search(&query, &kind_str, limit)?;
+    let raw = storage.search(&query, &kind_str, limit)?;
+    let items = apply_agent_opts(&raw, grep.as_deref(), agent);
 
     if items.is_empty() {
         eprintln!("no matching items");
@@ -577,7 +741,7 @@ fn cmd_paste(
 
     if all {
         for item in &items {
-            emit_one(item, json);
+            emit_one(item, json, agent.compact);
         }
     } else {
         let idx = n - 1;
@@ -585,24 +749,37 @@ fn cmd_paste(
             eprintln!("only {} matching item(s) — no #{} to paste", items.len(), n);
             std::process::exit(1);
         };
-        emit_one(item, json);
+        emit_one(item, json, agent.compact);
         if also_copy {
-            if item.kind == "image" {
-                if let Some(path) = &item.image_path {
+            // Use the ORIGINAL content (pre-truncation, pre-redaction) so the
+            // pasteboard actually gets the real thing.
+            let original = &raw[idx];
+            if original.kind == "image" {
+                if let Some(path) = &original.image_path {
                     let bytes = std::fs::read(path)?;
                     write_clipboard_image(&bytes)?;
                 }
             } else {
-                write_clipboard_text(&item.content)?;
+                write_clipboard_text(&original.content)?;
             }
         }
     }
     Ok(())
 }
 
-fn emit_one(item: &ClipItem, json: bool) {
+fn emit_one(item: &ClipItem, json: bool, compact: bool) {
     if json {
-        match serde_json::to_string(item) {
+        let output = if compact {
+            serde_json::to_string(&CompactItem {
+                id: item.id,
+                kind: &item.kind,
+                content: &item.content,
+                meta: item.meta.as_deref(),
+            })
+        } else {
+            serde_json::to_string(item)
+        };
+        match output {
             Ok(s) => println!("{s}"),
             Err(e) => eprintln!("serialize: {e}"),
         }
@@ -626,7 +803,7 @@ fn cmd_pop(storage: &mut Storage, kind: Option<String>) -> Result<()> {
         eprintln!("history is empty");
         std::process::exit(1);
     };
-    emit_one(&item, false);
+    emit_one(&item, false, false);
     let img = storage.delete(item.id)?;
     if let Some(p) = img { let _ = std::fs::remove_file(p); }
     Ok(())
@@ -657,10 +834,23 @@ fn cmd_watch(storage: &Storage, kind: Option<String>) -> Result<()> {
 
 // ── output helpers ───────────────────────────────────────────────────────────
 
-fn emit_items(items: &[ClipItem], json: bool) {
+fn emit_items(items: &[ClipItem], json: bool, compact: bool) {
     if json {
-        // Compact JSON array, one item per line for streaming consumers.
-        match serde_json::to_string_pretty(items) {
+        let output = if compact {
+            let view: Vec<CompactItem> = items
+                .iter()
+                .map(|i| CompactItem {
+                    id: i.id,
+                    kind: &i.kind,
+                    content: &i.content,
+                    meta: i.meta.as_deref(),
+                })
+                .collect();
+            serde_json::to_string_pretty(&view)
+        } else {
+            serde_json::to_string_pretty(items)
+        };
+        match output {
             Ok(s) => println!("{s}"),
             Err(e) => eprintln!("serialize: {e}"),
         }

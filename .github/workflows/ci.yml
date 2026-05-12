@@ -60,3 +60,58 @@ jobs:
       # crates emit `cfg(feature = "cargo-clippy")` from their macros, which
       # newer rustc flags. We don't want to fork upstream just for that.
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps -- -D warnings -A unexpected_cfgs -A deprecated
+
+  unit-tests:
+    name: unit tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+  cli-integration:
+    name: CLI integration tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
+      - run: bash scripts/test-cli.sh
+
+  bench:
+    name: CLI perf bench (non-gating)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
+      # 1k items keeps CI under ~2 minutes. The 10k case runs locally.
+      - run: RUNS=15 bash scripts/bench.sh 100 1000

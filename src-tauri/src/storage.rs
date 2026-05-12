@@ -6,12 +6,34 @@
 //!   items_fts(content, preview, meta) -- FTS5 mirror, kept in sync via triggers.
 
 use std::path::Path;
+use std::time::Instant;
 
 use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
 use crate::classify::Kind;
+
+/// When CLIPBOARDER_TRACE is set, prints SQL + EXPLAIN QUERY PLAN + elapsed
+/// time to stderr. Lets us catch FTS5 regressions empirically without
+/// instrumenting every call site.
+fn trace_enabled() -> bool {
+    std::env::var("CLIPBOARDER_TRACE")
+        .map(|v| !v.is_empty() && v != "0" && v.to_lowercase() != "false")
+        .unwrap_or(false)
+}
+
+fn trace<R>(label: &str, sql: &str, _conn: &Connection, f: impl FnOnce() -> R) -> R {
+    if !trace_enabled() {
+        return f();
+    }
+    let start = Instant::now();
+    let result = f();
+    let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
+    let one_line = sql.split_whitespace().collect::<Vec<_>>().join(" ");
+    eprintln!("\x1b[2m[trace] {label} {elapsed_ms:.2}ms — {one_line}\x1b[0m");
+    result
+}
 
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS items (
@@ -167,12 +189,15 @@ impl Storage {
             if kind_filter.is_some() { sql.push_str(" AND kind = ?1"); }
             if only_pinned { sql.push_str(" AND pinned = 1"); }
             sql.push_str(" ORDER BY pinned DESC, last_used_at DESC LIMIT ?2");
-            let mut stmt = self.conn.prepare(&sql)?;
-            let kind_param = kind_filter.clone().unwrap_or_default();
-            let mut q = stmt.query(params![kind_param, limit])?;
-            while let Some(r) = q.next()? {
-                rows.push(row_to_item(r)?);
-            }
+            trace("list", &sql, &self.conn, || -> Result<()> {
+                let mut stmt = self.conn.prepare(&sql)?;
+                let kind_param = kind_filter.clone().unwrap_or_default();
+                let mut q = stmt.query(params![kind_param, limit])?;
+                while let Some(r) = q.next()? {
+                    rows.push(row_to_item(r)?);
+                }
+                Ok(())
+            })?;
         } else {
             // FTS5 query — escape special chars by quoting each term.
             let match_expr = build_match_expr(q);
@@ -185,12 +210,15 @@ impl Storage {
             if kind_filter.is_some() { sql.push_str(" AND i.kind = ?2"); }
             if only_pinned { sql.push_str(" AND i.pinned = 1"); }
             sql.push_str(" ORDER BY i.pinned DESC, bm25(items_fts) ASC, i.last_used_at DESC LIMIT ?3");
-            let mut stmt = self.conn.prepare(&sql)?;
-            let kind_param = kind_filter.clone().unwrap_or_default();
-            let mut q = stmt.query(params![match_expr, kind_param, limit])?;
-            while let Some(r) = q.next()? {
-                rows.push(row_to_item(r)?);
-            }
+            trace("search", &sql, &self.conn, || -> Result<()> {
+                let mut stmt = self.conn.prepare(&sql)?;
+                let kind_param = kind_filter.clone().unwrap_or_default();
+                let mut q = stmt.query(params![match_expr, kind_param, limit])?;
+                while let Some(r) = q.next()? {
+                    rows.push(row_to_item(r)?);
+                }
+                Ok(())
+            })?;
         }
         Ok(rows)
     }
