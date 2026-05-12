@@ -1,13 +1,19 @@
 :root {
-  /* Tangerine — warm, friendly, anti-corporate. */
-  --md-primary-fg-color:        #FF7847;
-  --md-primary-fg-color--light: #FFB084;
-  --md-primary-fg-color--dark:  #E55A28;
-  --md-accent-fg-color:         #FFB084;
-  --md-accent-fg-color--transparent: rgba(255, 176, 132, 0.10);
+  /* Palette pulled directly from the app icon's gradient (#606EFF → #8A50E6)
+     extended into a warm pink accent for energy. */
+  --clipd-indigo:  #606EFF;
+  --clipd-purple:  #8A50E6;
+  --clipd-violet:  #7C5BF0;
+  --clipd-pink:    #EC4899;
+  --clipd-glow:    #A855F7;
 
-  /* Links pick up the primary by default; we want the brighter hover. */
-  --md-typeset-a-color: #FF7847;
+  --md-primary-fg-color:        var(--clipd-violet);
+  --md-primary-fg-color--light: var(--clipd-glow);
+  --md-primary-fg-color--dark:  #5B40C9;
+  --md-accent-fg-color:         var(--clipd-pink);
+  --md-accent-fg-color--transparent: rgba(168, 85, 247, 0.10);
+
+  --md-typeset-a-color: var(--clipd-violet);
 }
 
 [data-md-color-scheme="slate"] {
@@ -15,18 +21,17 @@
   --md-default-bg-color--light: #1c1c22;
   --md-default-bg-color--dark: #0f0f14;
 
-  /* Links pop a little brighter on the dark scheme. */
-  --md-typeset-a-color: #FF9466;
+  /* Links go a tone brighter on the dark scheme. */
+  --md-typeset-a-color: var(--clipd-glow);
 }
 
-/* Material renders the top header bar using the primary color directly,
-   which on a pure tangerine looks too candy. Tone it down for the bar only. */
+/* Header echoes the icon gradient. */
 .md-header {
-  background: linear-gradient(135deg, #FF7847 0%, #FF9466 100%);
+  background: linear-gradient(135deg, #606EFF 0%, #8A50E6 60%, #A855F7 100%);
 }
 
 .md-tabs {
-  background: linear-gradient(135deg, #E55A28 0%, #FF7847 100%);
+  background: linear-gradient(135deg, #5B40C9 0%, #7C5BF0 100%);
 }
 
 .md-typeset .clipboarder-hero {
@@ -47,11 +52,18 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, #FF6B47 0%, #FFB084 100%);
+  /* Mirrors the icon gradient, ending in a warm pink to keep the page from
+     feeling cold. */
+  background: linear-gradient(135deg, #606EFF 0%, #8A50E6 55%, #EC4899 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.05;
+}
+
+.md-typeset .clipboarder-hero img {
+  /* Match the soft drop-shadow to the icon's actual glow color. */
+  filter: drop-shadow(0 8px 24px rgba(124, 91, 240, 0.40));
 }
 
 .md-typeset .clipboarder-hero .tagline {
@@ -68,8 +80,8 @@
 }
 
 .md-typeset .install-cmd pre {
-  background: linear-gradient(135deg, rgba(255, 120, 71, 0.10), rgba(255, 176, 132, 0.06));
-  border: 1px solid rgba(255, 120, 71, 0.30);
+  background: linear-gradient(135deg, rgba(124, 91, 240, 0.12), rgba(168, 85, 247, 0.08));
+  border: 1px solid rgba(124, 91, 240, 0.30);
 }
 
 .feature-grid {
@@ -87,7 +99,7 @@
   transition: border-color 140ms, transform 140ms;
 }
 .feature-card:hover {
-  border-color: rgba(255, 120, 71, 0.40);
+  border-color: rgba(168, 85, 247, 0.45);
   transform: translateY(-1px);
 }
 
@@ -150,30 +162,31 @@
   margin: 0.5rem 0 1rem;
 }
 
-/* Button + tab accents pick up the new primary nicely. */
+/* Buttons echo the icon gradient. */
 .md-typeset .md-button {
-  border-color: var(--md-primary-fg-color);
-  color: var(--md-primary-fg-color);
+  border-color: var(--clipd-violet);
+  color: var(--clipd-glow);
 }
 .md-typeset .md-button--primary {
-  background: linear-gradient(135deg, #FF7847 0%, #FF9466 100%);
+  background: linear-gradient(135deg, #606EFF 0%, #8A50E6 100%);
   border-color: transparent;
   color: #fff;
 }
 .md-typeset .md-button--primary:hover {
-  background: linear-gradient(135deg, #FF6B47 0%, #FF7E5C 100%);
+  background: linear-gradient(135deg, #7080FF 0%, #9863F0 100%);
+  box-shadow: 0 6px 20px -4px rgba(138, 80, 230, 0.45);
 }
 .md-typeset .md-button:not(.md-button--primary):hover {
   background: var(--md-accent-fg-color--transparent);
-  color: var(--md-primary-fg-color);
-  border-color: var(--md-primary-fg-color);
+  color: var(--clipd-glow);
+  border-color: var(--clipd-glow);
 }
 
-/* Inline code spans look better with a warm tint. */
+/* Inline code spans get a soft violet tint. */
 .md-typeset code:not(pre code) {
-  color: #FFB084;
-  background: rgba(255, 120, 71, 0.10);
-  border: 1px solid rgba(255, 120, 71, 0.18);
+  color: #C8B5FF;
+  background: rgba(124, 91, 240, 0.14);
+  border: 1px solid rgba(124, 91, 240, 0.22);
   border-radius: 4px;
   padding: 1px 4px;
 }
@@ -183,8 +196,8 @@
   color: var(--md-default-fg-color--light);
 }
 .md-typeset .tabbed-labels > input:checked + label {
-  color: var(--md-primary-fg-color);
-  border-color: var(--md-primary-fg-color);
+  color: var(--clipd-glow);
+  border-color: var(--clipd-glow);
 }
 
 /* Tabbed content (used for the kind gallery) should not break out of the
