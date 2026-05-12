@@ -2,7 +2,7 @@
   <img src="docs/docs/assets/logo.png" alt="clipboarder" width="180">
 </p>
 
-<h3 align="center">A faster, smarter, more beautiful clipboard manager for macOS.</h3>
+<h3 align="center">A clipboard for humans <em>and</em> coding agents — searchable history, smart classification, native macOS UI, scriptable CLI.</h3>
 
 <p align="center">
   <a href="https://github.com/shakedaskayo/clipboarder/actions/workflows/ci.yml"><img src="https://github.com/shakedaskayo/clipboarder/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -23,6 +23,48 @@ Built with **Rust** (Tauri 2) and **React**. Single ~10 MB binary. Zero dependen
 ```bash
 curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/install.sh | bash
 ```
+
+<br>
+
+## Why this matters for coding agents
+
+The clipboard is the oldest piece of working memory on your computer. For 40 years it's been the glue between apps — copy an error from your terminal, paste it into Slack; copy a snippet from Stack Overflow, paste it into your editor; copy a PR URL from the browser, paste it into a doc. *You* use the clipboard as a scratch space between contexts dozens of times a day.
+
+**Coding agents can't.** Claude Code, Codex, Cursor, and every other LLM-powered assistant lives inside its context window. It can't see what you just copied from your terminal. It can't put a generated command on your clipboard for you to paste somewhere else. It can't recall what you had on your clipboard ten minutes ago.
+
+clipboarder fixes that. The same captured history that powers the GUI overlay is exposed to your agent through a tiny CLI (`cb cp` / `cb p`). **Your agent uses the clipboard the way you do** — read what's there, drop something on it for you to paste, search history, persist context across sessions.
+
+```bash
+# You copy a stack trace from your terminal.
+# You switch to Claude Code and say: "fix the error I just copied"
+#
+# Claude runs:                                      # what it does
+cb p                                                # reads your last clipboard entry
+# … figures out the fix …
+echo "cargo update -p tokio" | cb cp                # puts the fix on YOUR clipboard
+#
+# Claude replies: "I've put `cargo update -p tokio` on your clipboard — ⌘V into the terminal."
+# You hit ⌘V. Done. No paste-into-Claude. No copy-from-Claude. Zero friction.
+```
+
+Other flows it unlocks:
+
+- **"Find that PR URL I copied earlier"** → `cb p --kind repo --grep "auth"` returns the most recent matching GitHub link in <2 ms.
+- **"Save this for me to share in Slack"** → agent writes its output via `cb cp` and you paste it wherever, whenever.
+- **Persistent agent context** — the agent can `cb pin` items it wants to remember across sessions.
+- **Privacy-aware by default** — apps you exclude (1Password, Bitwarden, etc.) are never captured, so agents can't read them either.
+
+### One-liner Claude Code skill
+
+```bash
+mkdir -p ~/.claude/skills/clipboarder && \
+  curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md \
+    -o ~/.claude/skills/clipboarder/SKILL.md
+```
+
+Claude Code auto-loads the skill on its next session. No plugin, no config edit. It triggers on phrases like *"what did I copy"*, *"find that link I had"*, *"save this for later"*.
+
+For LangChain, OpenAI Assistants, Cursor, or any other harness — tool definitions, JSON schemas, privacy guidance, and secret-detection heuristics live in [docs / For agents](https://shakedaskayo.github.io/clipboarder/agents/).
 
 <br>
 
