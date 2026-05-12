@@ -35,8 +35,7 @@ pub const SUBCOMMANDS: &[&str] = &[
 /// Returns true when argv looks like a CLI invocation.
 pub fn looks_like_cli(args: &[String]) -> bool {
     if args.len() < 2 { return false; }
-    let first = args[1].as_str();
-    SUBCOMMANDS.iter().any(|s| *s == first)
+    SUBCOMMANDS.contains(&args[1].as_str())
 }
 
 #[derive(Parser)]
@@ -412,7 +411,7 @@ fn emit_items(items: &[ClipItem], json: bool) {
     }
     // ID  | KIND | AGE | SOURCE | PREVIEW
     let now = chrono::Utc::now().timestamp_millis();
-    println!("{:>5}  {:7}  {:>5}  {:14}  {}", "ID", "KIND", "AGE", "SOURCE", "PREVIEW");
+    println!("{:>5}  {:7}  {:>5}  {:14}  PREVIEW", "ID", "KIND", "AGE", "SOURCE");
     for it in items {
         let preview = truncate(&it.preview, 80);
         let age = ago(now - it.last_used_at);
@@ -426,12 +425,10 @@ fn emit_items(items: &[ClipItem], json: bool) {
 }
 
 fn truncate(s: &str, n: usize) -> String {
-    let mut count = 0;
     let mut out = String::new();
-    for c in s.chars() {
+    for (count, c) in s.chars().enumerate() {
         if count >= n { out.push('…'); break; }
         out.push(c);
-        count += 1;
     }
     out
 }

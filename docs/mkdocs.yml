@@ -98,6 +98,11 @@ nav:
     - search: cli-reference/search.md
     - show: cli-reference/show.md
     - add: cli-reference/add.md
+    - pin / unpin: cli-reference/pin.md
+    - delete / clear: cli-reference/delete.md
+    - copy: cli-reference/copy.md
+    - stats: cli-reference/stats.md
+    - watch: cli-reference/watch.md
   - For agents:
     - Integration: agents/index.md
   - Architecture:
