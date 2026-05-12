@@ -29,6 +29,7 @@ pub const SUBCOMMANDS: &[&str] = &[
     "list", "ls", "search", "find", "show", "cat", "get",
     "add", "ingest", "pin", "unpin", "star", "unstar",
     "delete", "rm", "clear", "copy", "stats", "watch",
+    "cp", "pipe", "p", "paste", "last", "pop",
     "help", "-h", "--help", "-V", "--version",
 ];
 
@@ -145,6 +146,58 @@ pub enum Command {
         #[arg(short, long)]
         kind: Option<String>,
     },
+
+    /// pbcopy++ — stdin → clipboarder history + the macOS pasteboard.
+    ///
+    /// Like `pbcopy`, but the content is also persisted to clipboarder's
+    /// searchable history.
+    #[command(alias = "pipe")]
+    Cp {
+        /// Override the auto-classification.
+        #[arg(long)]
+        kind: Option<String>,
+        /// Tag where it came from (shown in the row meta).
+        #[arg(long, default_value = "cli")]
+        source: String,
+        /// Don't touch the macOS pasteboard — only persist to history.
+        #[arg(long)]
+        no_clipboard: bool,
+        /// Emit `{"id":N,"inserted":bool,"kind":"..."}` on success.
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// pbpaste++ — print the Nth most-recent item's content to stdout.
+    ///
+    /// Supports `--kind`/`--grep` filters and `--copy` to also put the
+    /// item on the macOS pasteboard. Perfect for shell pipelines.
+    #[command(alias = "paste", alias = "last")]
+    P {
+        /// 1-indexed position (1 = most recent). Defaults to 1.
+        #[arg(default_value_t = 1)]
+        n: usize,
+        /// Restrict to one kind.
+        #[arg(short, long)]
+        kind: Option<String>,
+        /// Only consider items matching this FTS query (prefix-matched).
+        #[arg(short, long)]
+        grep: Option<String>,
+        /// After printing, also write the content to the macOS pasteboard.
+        #[arg(long)]
+        copy: bool,
+        /// Print all matches (one per line) instead of just the Nth.
+        #[arg(long)]
+        all: bool,
+        /// Output JSON row instead of just the content body.
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Print the most recent item *and* delete it from history.
+    Pop {
+        #[arg(short, long)]
+        kind: Option<String>,
+    },
 }
 
 /// Entry point invoked from main.rs when argv looks like CLI mode.
@@ -171,6 +224,13 @@ pub fn run() -> Result<()> {
         Command::Copy { id } => cmd_copy(&storage, id),
         Command::Stats { json } => cmd_stats(&storage, json),
         Command::Watch { kind } => cmd_watch(&storage, kind),
+        Command::Cp { kind, source, no_clipboard, json } => {
+            cmd_add(&mut storage, None, kind, !no_clipboard, Some(source), json)
+        }
+        Command::P { n, kind, grep, copy, all, json } => {
+            cmd_paste(&storage, n, kind, grep, copy, all, json)
+        }
+        Command::Pop { kind } => cmd_pop(&mut storage, kind),
     }
 }
 
@@ -368,6 +428,88 @@ fn cmd_stats(storage: &Storage, json: bool) -> Result<()> {
         println!("db:       {}", stats.db_path);
         println!("db size:  {} bytes", stats.db_size_bytes);
     }
+    Ok(())
+}
+
+// ── paste / pop ──────────────────────────────────────────────────────────────
+
+fn cmd_paste(
+    storage: &Storage,
+    n: usize,
+    kind: Option<String>,
+    grep: Option<String>,
+    also_copy: bool,
+    all: bool,
+    json: bool,
+) -> Result<()> {
+    if n == 0 {
+        eprintln!("position N must be >= 1");
+        std::process::exit(2);
+    }
+    let query = grep.unwrap_or_default();
+    let kind_str = normalize_kind(kind);
+    let limit = if all { 10_000 } else { n as i64 };
+    let items = storage.search(&query, &kind_str, limit)?;
+
+    if items.is_empty() {
+        eprintln!("no matching items");
+        std::process::exit(1);
+    }
+
+    if all {
+        for item in &items {
+            emit_one(item, json);
+        }
+    } else {
+        let idx = n - 1;
+        let Some(item) = items.get(idx) else {
+            eprintln!("only {} matching item(s) — no #{} to paste", items.len(), n);
+            std::process::exit(1);
+        };
+        emit_one(item, json);
+        if also_copy {
+            if item.kind == "image" {
+                if let Some(path) = &item.image_path {
+                    let bytes = std::fs::read(path)?;
+                    write_clipboard_image(&bytes)?;
+                }
+            } else {
+                write_clipboard_text(&item.content)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn emit_one(item: &ClipItem, json: bool) {
+    if json {
+        match serde_json::to_string(item) {
+            Ok(s) => println!("{s}"),
+            Err(e) => eprintln!("serialize: {e}"),
+        }
+    } else if item.kind == "image" {
+        // Images aren't text — emit the on-disk path so callers can pipe it.
+        if let Some(p) = &item.image_path {
+            println!("{p}");
+        }
+    } else {
+        print!("{}", item.content);
+        if !item.content.ends_with('\n') {
+            println!();
+        }
+    }
+}
+
+fn cmd_pop(storage: &mut Storage, kind: Option<String>) -> Result<()> {
+    let kind_str = normalize_kind(kind);
+    let items = storage.search("", &kind_str, 1)?;
+    let Some(item) = items.into_iter().next() else {
+        eprintln!("history is empty");
+        std::process::exit(1);
+    };
+    emit_one(&item, false);
+    let img = storage.delete(item.id)?;
+    if let Some(p) = img { let _ = std::fs::remove_file(p); }
     Ok(())
 }
 

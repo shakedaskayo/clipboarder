@@ -5,7 +5,15 @@ clipboarder ships a single binary that runs in two modes:
 - **No args** → GUI overlay (the floating window you summon with `⌘⇧V`)
 - **With a subcommand** → CLI
 
-The installer symlinks `/usr/local/bin/clipboarder` (or `~/.local/bin/clipboarder` if the former isn't writable) to the .app's binary, so `clipboarder list` works from any shell.
+The installer creates **two symlinks** on your PATH:
+
+- `clipboarder` — full command name
+- `cb` — short alias for one-liners
+
+Both point at the same binary. Use whichever feels right.
+
+!!! tip "Start here"
+    The most powerful workflows are pipe-based. See **[Pipe one-liners (cb cp / cb p)](pipes.md)** — that's the page that turns clipboarder into a context database your shell and AI agents can drive.
 
 ## Overview
 
@@ -19,20 +27,24 @@ Designed for shell pipelines and AI agents.
 Usage: clipboarder <COMMAND>
 
 Commands:
-  list    List most recent items                     (alias: ls)
-  search  Full-text search the clipboard history     (alias: find)
-  show    Print one item's full content              (alias: cat, get)
-  add     Add a new item from stdin or argument      (alias: ingest)
-  pin     Pin an item                                (alias: star)
-  unpin   Unpin an item                              (alias: unstar)
-  delete  Delete an item                             (alias: rm)
+  cp      pbcopy++  stdin → history + system pasteboard      (alias: pipe)
+  p       pbpaste++ Nth recent item → stdout                 (aliases: paste, last)
+  pop     Print + delete most recent item
+
+  list    List most recent items                             (alias: ls)
+  search  Full-text search the clipboard history             (alias: find)
+  show    Print one item's full content                      (alias: cat, get)
+  add     Add a new item from stdin or argument              (alias: ingest)
+  pin     Pin an item                                        (alias: star)
+  unpin   Unpin an item                                      (alias: unstar)
+  delete  Delete an item                                     (alias: rm)
   clear   Clear all non-pinned items
-  copy    Copy item to the macOS clipboard
+  copy    Copy a history item back to the macOS pasteboard
   stats   Print database statistics
   watch   Stream new items as JSON Lines on stdout
 ```
 
-## Quick recipes
+## Quick recipes (see [pipes.md](pipes.md) for the full picture)
 
 ### Copy the latest captured URL to the pasteboard
 

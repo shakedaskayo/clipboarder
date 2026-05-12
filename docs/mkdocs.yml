@@ -94,6 +94,7 @@ nav:
     - Launch at login: settings/launch-at-login.md
   - CLI:
     - Overview: cli-reference/index.md
+    - "Pipe one-liners (cb cp / cb p)": cli-reference/pipes.md
     - list: cli-reference/list.md
     - search: cli-reference/search.md
     - show: cli-reference/show.md

@@ -10,48 +10,47 @@ clipboarder's CLI is designed to be agent-friendly. Every command supports `--js
 - **Per-kind filtering** — `--kind repo` / `--kind code` / `--kind color` etc. lets the agent narrow context cheaply.
 - **Pinning is a write-light operation** — agents can mark items the user wants to keep around without restructuring storage.
 
-## Drop-in Claude Skill
+## Drop-in Claude Skill (one-liner)
 
-If you're using Claude Code, copy [`SKILL.md`](https://github.com/shakedaskayo/clipboarder/blob/main/agents/.claude/skills/clipboarder/SKILL.md) to:
-
+```bash
+mkdir -p ~/.claude/skills/clipboarder && \
+  curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md \
+    -o ~/.claude/skills/clipboarder/SKILL.md
 ```
-~/.claude/skills/clipboarder/SKILL.md
-```
 
-Claude auto-loads it. The skill triggers on phrases like "what did I copy", "find that link I had", "save this for later". No further config.
+Claude Code auto-loads the skill on every session. The skill triggers on phrases like *"what did I copy"*, *"find that link I had"*, *"save this for later"* — no further config, no plugin install.
 
 ## CLI cheat-sheet
 
+Prefer **`cb`** (the short alias) over `clipboarder` in tool calls — it's the same binary.
+
 ```bash
-# Recent items (table)
-clipboarder list --limit 10
+# Pipe one-liners — recommended path for agents
+echo "save this" | cb cp --source claude --json    # stdin → history + clipboard
+cb p                                               # most recent item to stdout
+cb p --kind url                                    # most recent URL
+cb p --kind repo --grep "tauri" --json             # composed search → JSON row
+cb p --all --kind code --limit 5                   # all matching, body per line
+cb pop                                             # print + delete most recent
 
-# Recent items (JSON for agents)
-clipboarder list --limit 10 --json
+# Structured search
+cb list --limit 10 --json
+cb search "anthropic" --json
+cb search "react hooks" --kind code --json
+cb show 42 --json                                  # full row by id
 
-# Full-text search
-clipboarder search "anthropic" --json
+# Mutations
+cb pin 42
+cb delete 42
+cb clear -y                                        # nuke non-pinned
 
-# Filter by kind
-clipboarder list --kind repo --limit 5 --json
-clipboarder list --kind code --limit 5 --json
-clipboarder list --kind color --json
-
-# Show full content of an item
-clipboarder show 42 --json
-
-# Stream new items as they arrive (JSONL on stdout)
-clipboarder watch
-
-# Ingest from stdin
-echo "save this for later" | clipboarder add --source "claude" --json
-
-# Pin / delete
-clipboarder pin 42
-clipboarder delete 42
+# Watch new items (JSONL, polls every 500ms)
+cb watch --kind url | while read -r line; do
+  echo "$line" | jq -r .content | xargs notify-send "New URL captured"
+done
 
 # Stats
-clipboarder stats --json
+cb stats --json
 ```
 
 ## JSON schema

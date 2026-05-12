@@ -175,27 +175,69 @@ open -a clipboarder
 
 <br>
 
-## CLI
+## CLI — `clipboarder` and `cb`
 
-The same binary that runs the GUI also runs as a CLI when invoked with a subcommand. `install.sh` symlinks `clipboarder` onto your `$PATH`.
+The same binary that runs the GUI also runs as a CLI. `install.sh` puts **two symlinks** on your PATH: `clipboarder` (full name) and `cb` (short alias).
+
+### Pipe ergonomics — the part that makes it powerful
+
+`pbcopy` / `pbpaste`, but with history, search, and kind filters baked in:
 
 ```bash
-clipboarder list                           # recent items
-clipboarder search "github" --json         # FTS search
-clipboarder show 42                        # full content
-clipboarder add "remember this" --json     # ingest from arg
-git log --oneline -5 | clipboarder add     # ingest from stdin
-clipboarder pin 42                         # star
-clipboarder copy 42                        # put on macOS clipboard
-clipboarder stats --json                   # by-kind counts + db size
-clipboarder watch                          # stream new copies as JSON Lines
+echo "remember this"            | cb cp        # stdin → history + macOS clipboard
+git log --oneline -5            | cb cp        # multi-line ingestion
+curl -s api.github.com/users/me | cb cp --source github
+
+cb p                                            # print most recent item
+cb p --kind url                                 # most recent URL
+cb p --grep "react"                             # most recent match for "react"
+cb p --kind repo --grep tauri --copy            # composed + also put on pasteboard
+cb p --all --kind code                          # every code item, one per line
+
+open "$(cb p --kind url)"                       # open the last URL in your browser
+cb p --grep "auth token" --copy                 # search → pasteboard in one step
+```
+
+> **Think of clipboarder as a local context database that your shell and AI agents can drive with one-liners.** Every copy you've ever made is searchable in sub-millisecond time, kind-filterable, and pipeable into any tool.
+
+Drop these into your `~/.zshrc` for a `pbcopy` replacement:
+
+```bash
+alias pbcopy='cb cp'
+alias pbpaste='cb p'
+```
+
+### Full subcommand list
+
+```
+cp / pipe             stdin → history + system pasteboard
+p  / paste / last     Nth recent item → stdout (with --kind / --grep / --copy)
+pop                   print + delete most recent
+
+list / ls             recent items (table or --json)
+search / find         FTS5 search with bm25 ranking
+show / cat / get      full content of one item
+add / ingest          ingest from stdin or arg (no pasteboard mutation)
+pin / star, unpin     toggle star
+delete / rm, clear    remove items
+copy <id>             put a history item on macOS pasteboard
+stats                 totals + by-kind breakdown + db size
+watch                 stream new items as JSON Lines
 ```
 
 Every command supports `--json` for machine-readable output. Full reference: <https://shakedaskayo.github.io/clipboarder/cli-reference/>.
 
-### For AI agents
+### For AI agents — drop-in Claude Code skill
 
-A drop-in **Claude Skill** is shipped at [`agents/.claude/skills/clipboarder/SKILL.md`](agents/.claude/skills/clipboarder/SKILL.md) — copy it to `~/.claude/skills/clipboarder/SKILL.md` and Claude auto-loads it. For LangChain, OpenAI Assistants, or any other harness, see [docs / For agents](https://shakedaskayo.github.io/clipboarder/agents/) for tool definitions and best practices (privacy, result-size caps, kind filtering, secret-detection heuristics).
+```bash
+mkdir -p ~/.claude/skills/clipboarder && \
+  curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md \
+    -o ~/.claude/skills/clipboarder/SKILL.md
+```
+
+Claude Code auto-loads the skill on every session. Now Claude understands phrases like *"what did I copy"*, *"find that link I had"*, *"save this for later"* and invokes `cb p --grep …` / `cb cp` for you.
+
+For LangChain / OpenAI Assistants / any other harness, see [docs / For agents](https://shakedaskayo.github.io/clipboarder/agents/) — JSON schema, tool definitions, privacy guidance, secret-detection heuristics.
 
 <br>
 

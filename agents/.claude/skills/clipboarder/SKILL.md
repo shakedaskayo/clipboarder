@@ -26,19 +26,38 @@ If the user is just asking you to put something on the macOS pasteboard *right n
 
 ## Commands you should know
 
-The CLI exposes these subcommands. Pass `--json` on anything that returns data so you get a stable schema.
+The CLI is on the user's PATH as both `clipboarder` (full name) and `cb` (short alias). Prefer `cb` in your tool calls — it's shorter and easier to compose. Pass `--json` on anything that returns data so you get a stable schema.
+
+**Pipe one-liners (use these first — they're the most powerful and easiest):**
+
+| Command | Purpose |
+|---------|---------|
+| `echo "X" \| cb cp [--source NAME] --json` | Ingest stdin into history + system clipboard. Best for "save this for me". |
+| `cb p` | Print most recent item content (1 line for most kinds; full body for code/text). |
+| `cb p --grep "<query>"` | Most recent item matching FTS query. Sub-ms. **Prefer this over `cb search` + `cb show`.** |
+| `cb p --kind <K> --grep "<query>"` | Same, restricted to one kind. |
+| `cb p N` | Nth most recent (1-indexed). |
+| `cb p --all --kind <K>` | All items of a kind, one body per line. |
+| `cb p --json` | Full row as JSON instead of just the content body. |
+| `cb pop` | Print + delete the most recent item. |
+
+**Structured queries:**
 
 | Command | Purpose | Read-only? |
 |---------|---------|------------|
-| `clipboarder list [--limit N] [--kind K] --json` | Most recent items | yes |
-| `clipboarder search "<query>" [--limit N] [--kind K] --json` | Full-text search with bm25 ranking | yes |
-| `clipboarder show <id> --json` | Full content of one item | yes |
-| `clipboarder stats --json` | Counts by kind, db size | yes |
-| `clipboarder add [text] [--kind K] [--source S] [--copy] --json` | Ingest an item (stdin if `text` omitted) | no |
-| `clipboarder pin <id>` / `unpin <id>` | Star/unstar | no |
-| `clipboarder delete <id>` | Remove one item | no |
-| `clipboarder copy <id>` | Put item on system pasteboard (no paste-back) | no |
-| `clipboarder clear -y` | Remove all non-pinned items | no |
+| `cb list [--limit N] [--kind K] --json` | Most recent items | yes |
+| `cb search "<query>" [--limit N] [--kind K] --json` | Full-text search with bm25 ranking | yes |
+| `cb show <id> --json` | Full row of one item | yes |
+| `cb stats --json` | Counts by kind, db size | yes |
+
+**Mutations (use sparingly):**
+
+| Command | Purpose |
+|---------|---------|
+| `cb pin <id>` / `cb unpin <id>` | Star/unstar |
+| `cb delete <id>` | Remove one item |
+| `cb copy <id>` | Put item on system pasteboard |
+| `cb clear -y` | Remove all non-pinned items |
 
 ## Item kinds
 
@@ -85,37 +104,54 @@ Every item is auto-classified at capture time. Filtering by `--kind` narrows res
 ### "Find that PR I copied recently"
 
 ```bash
-clipboarder search "pull" --kind repo --limit 5 --json
+cb p --kind repo --grep "pull" --json
 ```
 
-Then for each item where `meta == "github"` and the URL path matches `/pull/`, present the title + URL.
+This returns the row most recently used that's both a repo URL and matches "pull". One shot, ranked by bm25 + recency.
 
-### "What was that hex color I had?"
+### "What was the last hex color I had?"
 
 ```bash
-clipboarder list --kind color --limit 5 --json
+cb p --kind color
 ```
+
+Returns just the content (e.g. `#7c8cff`) to stdout. Use `--json` if you also need the parsed `meta` field.
 
 ### "Ingest this for me"
 
 ```bash
-echo "<content>" | clipboarder add --source "claude" --json
+echo "<content>" | cb cp --source "claude" --json
 # emits {"id": 42, "inserted": true, "kind": "..."}
 ```
 
-Prefer ingesting via stdin so multi-line content is preserved.
+`cb cp` writes to **both** the clipboarder history and the macOS pasteboard. Add `--no-clipboard` if you only want the history side. Prefer stdin so multi-line content is preserved.
+
+### "Open the last URL I copied in my browser"
+
+```bash
+open "$(cb p --kind url)"
+```
 
 ### "Save this so I don't lose it"
 
 ```bash
-# First find or add the item, then pin by id
-clipboarder pin 42
+# Ingest + pin in one shot
+ID=$(echo "<content>" | cb cp --source "claude" --json | jq .id)
+cb pin "$ID"
 ```
 
 ### "Show me my last 5 things"
 
 ```bash
-clipboarder list --limit 5 --json
+cb list --limit 5 --json
+```
+
+### "What did I just copy?"
+
+```bash
+cb p
+# or for a full row:
+cb p --json
 ```
 
 ## Privacy & best practices

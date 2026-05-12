@@ -172,7 +172,10 @@ CLI_LINK=""
 for dir in /usr/local/bin "$HOME/.local/bin"; do
   mkdir -p "$dir" 2>/dev/null || true
   if [ -w "$dir" ]; then
-    if ln -sf "$APP_BIN" "$dir/clipboarder" 2>/dev/null; then
+    # Both names point at the same binary. `cb` is the short alias for
+    # pipe-friendly one-liners (`cb cp` / `cb p` / `echo … | cb cp`).
+    if ln -sf "$APP_BIN" "$dir/clipboarder" 2>/dev/null \
+       && ln -sf "$APP_BIN" "$dir/cb" 2>/dev/null; then
       CLI_LINK="$dir/clipboarder"
       break
     fi
@@ -180,11 +183,11 @@ for dir in /usr/local/bin "$HOME/.local/bin"; do
 done
 
 if [ -n "$CLI_LINK" ]; then
-  ok "CLI symlink: ${CLI_LINK} → ${APP_BIN}"
+  ok "CLI: ${CLI_LINK} + $(dirname "$CLI_LINK")/cb (alias) → ${APP_BIN}"
   case ":$PATH:" in
     *":${CLI_LINK%/clipboarder}:"*) : ;;
     *)
-      warn "${CLI_LINK%/clipboarder} is not on \$PATH — add it to ~/.zshrc to use \`clipboarder\` from any shell"
+      warn "${CLI_LINK%/clipboarder} is not on \$PATH — add it to ~/.zshrc to use \`clipboarder\` / \`cb\` from any shell"
       ;;
   esac
 else
@@ -206,10 +209,22 @@ ${CLR_BOLD}Next steps:${CLR_RESET}
      and turns green. You're set.
 
   • ${CLR_BOLD}⌘⇧V${CLR_RESET} from anywhere   summon the overlay
-  • ${CLR_BOLD}⌘,${CLR_RESET}                   open Settings (rebind the hotkey,
-                          launch at login, privacy exclusions)
-  • ${CLR_BOLD}clipboarder list${CLR_RESET}     CLI access — search/ingest from any shell
-  • ${CLR_BOLD}clipboarder --help${CLR_RESET}   all subcommands
+  • ${CLR_BOLD}⌘,${CLR_RESET}                   open Settings
+
+${CLR_BOLD}Pipe ergonomics${CLR_RESET} (the \`cb\` alias is shorter for one-liners):
+
+  • ${CLR_BOLD}echo "anything" | cb cp${CLR_RESET}       stdin → history + pasteboard
+  • ${CLR_BOLD}cb p${CLR_RESET}                          print most recent item
+  • ${CLR_BOLD}cb p --kind url${CLR_RESET}               most recent URL
+  • ${CLR_BOLD}cb p --grep "react"${CLR_RESET}           most recent match for "react"
+  • ${CLR_BOLD}cb p --copy${CLR_RESET}                   ↑ and put on pasteboard
+  • ${CLR_BOLD}cb --help${CLR_RESET}                     full reference
+
+${CLR_BOLD}For Claude Code:${CLR_RESET}  install the clipboarder skill (auto-loads):
+
+  mkdir -p ~/.claude/skills/clipboarder && \\
+    curl -fsSL https://raw.githubusercontent.com/shakedaskayo/clipboarder/main/agents/.claude/skills/clipboarder/SKILL.md \\
+      -o ~/.claude/skills/clipboarder/SKILL.md
 
 Docs: https://shakedaskayo.github.io/clipboarder
 EOF
