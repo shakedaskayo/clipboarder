@@ -96,6 +96,24 @@ jobs:
       - run: cargo build --release --manifest-path src-tauri/Cargo.toml
       - run: bash scripts/test-cli.sh
 
+  server-integration:
+    name: Server integration tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
+      - run: bash scripts/test-server.sh
+
   bench:
     name: CLI perf bench (non-gating)
     runs-on: macos-latest

@@ -38,6 +38,7 @@ fn trace<R>(label: &str, sql: &str, _conn: &Connection, f: impl FnOnce() -> R) -
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS items (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    namespace     TEXT NOT NULL DEFAULT 'default',
     kind          TEXT NOT NULL,
     content       TEXT NOT NULL,
     preview       TEXT NOT NULL,
@@ -52,9 +53,11 @@ CREATE TABLE IF NOT EXISTS items (
     last_used_at  INTEGER NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_items_hash ON items(content_hash);
-CREATE INDEX IF NOT EXISTS idx_items_last_used ON items(last_used_at DESC);
-CREATE INDEX IF NOT EXISTS idx_items_kind ON items(kind, last_used_at DESC);
+-- Hash uniqueness is per-namespace so two clients can independently capture
+-- the same content.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_items_hash ON items(namespace, content_hash);
+CREATE INDEX IF NOT EXISTS idx_items_ns_last_used ON items(namespace, last_used_at DESC);
+CREATE INDEX IF NOT EXISTS idx_items_ns_kind ON items(namespace, kind, last_used_at DESC);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
     content,
@@ -82,6 +85,8 @@ CREATE TRIGGER IF NOT EXISTS items_au AFTER UPDATE ON items BEGIN
     VALUES (new.id, new.content, new.preview, COALESCE(new.meta, ''));
 END;
 "#;
+
+pub const DEFAULT_NAMESPACE: &str = "default";
 
 pub struct Storage {
     conn: Connection,
@@ -126,19 +131,34 @@ impl Storage {
 
         // Migrations for existing DBs created before new columns existed.
         let _ = conn.execute("ALTER TABLE items ADD COLUMN source_app_id TEXT", []);
+        // namespace column was added later; ALTER fails harmlessly on fresh DBs.
+        let _ = conn.execute(
+            "ALTER TABLE items ADD COLUMN namespace TEXT NOT NULL DEFAULT 'default'",
+            [],
+        );
+        // Old unique index is on content_hash alone; replace with namespace-scoped.
+        let _ = conn.execute("DROP INDEX IF EXISTS idx_items_hash", []);
+        let _ = conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_items_hash ON items(namespace, content_hash)",
+            [],
+        );
+        let _ = conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_items_ns_last_used ON items(namespace, last_used_at DESC)",
+            [],
+        );
 
         Ok(Self { conn })
     }
 
-    /// Insert or refresh an item (dedup by content_hash). Returns the row id and
-    /// whether the row was newly inserted (false = existing item bumped).
-    pub fn upsert(&mut self, item: &NewItem) -> Result<(i64, bool)> {
+    /// Insert or refresh an item (dedup by (namespace, content_hash)). Returns the
+    /// row id and whether the row was newly inserted (false = existing item bumped).
+    pub fn upsert(&mut self, item: &NewItem, namespace: &str) -> Result<(i64, bool)> {
         let now = chrono::Utc::now().timestamp_millis();
         let existing: Option<i64> = self
             .conn
             .query_row(
-                "SELECT id FROM items WHERE content_hash = ?1",
-                params![item.content_hash],
+                "SELECT id FROM items WHERE namespace = ?1 AND content_hash = ?2",
+                params![namespace, item.content_hash],
                 |r| r.get(0),
             )
             .optional()?;
@@ -151,9 +171,10 @@ impl Storage {
             Ok((id, false))
         } else {
             self.conn.execute(
-                "INSERT INTO items (kind, content, preview, meta, source_app, source_app_id, image_path, pinned, size, content_hash, created_at, last_used_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9, ?10, ?10)",
+                "INSERT INTO items (namespace, kind, content, preview, meta, source_app, source_app_id, image_path, pinned, size, content_hash, created_at, last_used_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0, ?9, ?10, ?11, ?11)",
                 params![
+                    namespace,
                     item.kind.as_str(),
                     item.content,
                     item.preview,
@@ -170,7 +191,7 @@ impl Storage {
         }
     }
 
-    pub fn search(&self, query: &str, kind: &str, limit: i64) -> Result<Vec<ClipItem>> {
+    pub fn search(&self, query: &str, kind: &str, limit: i64, namespace: &str) -> Result<Vec<ClipItem>> {
         let q = query.trim();
         let kind_filter = match kind {
             "all" | "" => None,
@@ -181,39 +202,37 @@ impl Storage {
 
         let mut rows = Vec::new();
         if q.is_empty() {
-            // No query: just recent items, optionally filtered by kind.
             let mut sql = String::from(
                 "SELECT id, kind, content, preview, meta, source_app, source_app_id, image_path, pinned, size, created_at, last_used_at
-                 FROM items WHERE 1=1",
+                 FROM items WHERE namespace = ?1",
             );
-            if kind_filter.is_some() { sql.push_str(" AND kind = ?1"); }
+            if kind_filter.is_some() { sql.push_str(" AND kind = ?2"); }
             if only_pinned { sql.push_str(" AND pinned = 1"); }
-            sql.push_str(" ORDER BY pinned DESC, last_used_at DESC LIMIT ?2");
+            sql.push_str(" ORDER BY pinned DESC, last_used_at DESC LIMIT ?3");
             trace("list", &sql, &self.conn, || -> Result<()> {
                 let mut stmt = self.conn.prepare(&sql)?;
                 let kind_param = kind_filter.clone().unwrap_or_default();
-                let mut q = stmt.query(params![kind_param, limit])?;
+                let mut q = stmt.query(params![namespace, kind_param, limit])?;
                 while let Some(r) = q.next()? {
                     rows.push(row_to_item(r)?);
                 }
                 Ok(())
             })?;
         } else {
-            // FTS5 query — escape special chars by quoting each term.
             let match_expr = build_match_expr(q);
             let mut sql = String::from(
                 "SELECT i.id, i.kind, i.content, i.preview, i.meta, i.source_app, i.source_app_id, i.image_path, i.pinned, i.size, i.created_at, i.last_used_at
                  FROM items_fts f
                  JOIN items i ON i.id = f.rowid
-                 WHERE items_fts MATCH ?1",
+                 WHERE items_fts MATCH ?1 AND i.namespace = ?2",
             );
-            if kind_filter.is_some() { sql.push_str(" AND i.kind = ?2"); }
+            if kind_filter.is_some() { sql.push_str(" AND i.kind = ?3"); }
             if only_pinned { sql.push_str(" AND i.pinned = 1"); }
-            sql.push_str(" ORDER BY i.pinned DESC, bm25(items_fts) ASC, i.last_used_at DESC LIMIT ?3");
+            sql.push_str(" ORDER BY i.pinned DESC, bm25(items_fts) ASC, i.last_used_at DESC LIMIT ?4");
             trace("search", &sql, &self.conn, || -> Result<()> {
                 let mut stmt = self.conn.prepare(&sql)?;
                 let kind_param = kind_filter.clone().unwrap_or_default();
-                let mut q = stmt.query(params![match_expr, kind_param, limit])?;
+                let mut q = stmt.query(params![match_expr, namespace, kind_param, limit])?;
                 while let Some(r) = q.next()? {
                     rows.push(row_to_item(r)?);
                 }
@@ -223,72 +242,99 @@ impl Storage {
         Ok(rows)
     }
 
-    pub fn get(&self, id: i64) -> Result<Option<ClipItem>> {
+    pub fn get(&self, id: i64, namespace: &str) -> Result<Option<ClipItem>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, kind, content, preview, meta, source_app, source_app_id, image_path, pinned, size, created_at, last_used_at
-             FROM items WHERE id = ?1",
+             FROM items WHERE id = ?1 AND namespace = ?2",
         )?;
         let item = stmt
-            .query_row(params![id], |r| Ok(row_to_item(r).unwrap()))
+            .query_row(params![id, namespace], |r| Ok(row_to_item(r).unwrap()))
             .optional()?;
         Ok(item)
     }
 
-    pub fn bump(&mut self, id: i64) -> Result<()> {
+    pub fn bump(&mut self, id: i64, namespace: &str) -> Result<()> {
         let now = chrono::Utc::now().timestamp_millis();
-        self.conn.execute("UPDATE items SET last_used_at = ?1 WHERE id = ?2", params![now, id])?;
+        self.conn.execute(
+            "UPDATE items SET last_used_at = ?1 WHERE id = ?2 AND namespace = ?3",
+            params![now, id, namespace],
+        )?;
         Ok(())
     }
 
-    pub fn toggle_pin(&mut self, id: i64) -> Result<bool> {
-        let cur: i64 = self
+    pub fn toggle_pin(&mut self, id: i64, namespace: &str) -> Result<bool> {
+        let cur: Option<i64> = self
             .conn
-            .query_row("SELECT pinned FROM items WHERE id = ?1", params![id], |r| r.get(0))?;
+            .query_row(
+                "SELECT pinned FROM items WHERE id = ?1 AND namespace = ?2",
+                params![id, namespace],
+                |r| r.get(0),
+            )
+            .optional()?;
+        let Some(cur) = cur else { return Ok(false); };
         let next = if cur == 0 { 1 } else { 0 };
-        self.conn
-            .execute("UPDATE items SET pinned = ?1 WHERE id = ?2", params![next, id])?;
+        self.conn.execute(
+            "UPDATE items SET pinned = ?1 WHERE id = ?2 AND namespace = ?3",
+            params![next, id, namespace],
+        )?;
         Ok(next == 1)
     }
 
-    pub fn delete(&mut self, id: i64) -> Result<Option<String>> {
+    pub fn delete(&mut self, id: i64, namespace: &str) -> Result<Option<String>> {
         let img: Option<String> = self
             .conn
-            .query_row("SELECT image_path FROM items WHERE id = ?1", params![id], |r| r.get(0))
+            .query_row(
+                "SELECT image_path FROM items WHERE id = ?1 AND namespace = ?2",
+                params![id, namespace],
+                |r| r.get(0),
+            )
             .optional()?
             .flatten();
-        self.conn.execute("DELETE FROM items WHERE id = ?1", params![id])?;
+        self.conn.execute(
+            "DELETE FROM items WHERE id = ?1 AND namespace = ?2",
+            params![id, namespace],
+        )?;
         Ok(img)
     }
 
-    pub fn clear(&mut self) -> Result<Vec<String>> {
+    pub fn clear(&mut self, namespace: &str) -> Result<Vec<String>> {
         let mut imgs = Vec::new();
-        let mut stmt = self.conn.prepare("SELECT image_path FROM items WHERE image_path IS NOT NULL AND pinned = 0")?;
-        let mut rows = stmt.query([])?;
+        let mut stmt = self.conn.prepare(
+            "SELECT image_path FROM items WHERE namespace = ?1 AND image_path IS NOT NULL AND pinned = 0",
+        )?;
+        let mut rows = stmt.query(params![namespace])?;
         while let Some(r) = rows.next()? {
             if let Ok(Some(p)) = r.get::<_, Option<String>>(0) { imgs.push(p); }
         }
-        self.conn.execute("DELETE FROM items WHERE pinned = 0", [])?;
+        self.conn.execute(
+            "DELETE FROM items WHERE namespace = ?1 AND pinned = 0",
+            params![namespace],
+        )?;
         Ok(imgs)
     }
 
-    /// Enforce a max-item budget by deleting the oldest non-pinned rows.
-    /// Returns image paths whose rows were deleted (caller should unlink them).
-    pub fn enforce_limit(&mut self, max_items: u32) -> Result<Vec<String>> {
+    /// Enforce a max-item budget by deleting the oldest non-pinned rows in
+    /// the given namespace.
+    pub fn enforce_limit(&mut self, max_items: u32, namespace: &str) -> Result<Vec<String>> {
         if max_items == 0 { return Ok(Vec::new()); }
         let count: i64 = self
             .conn
-            .query_row("SELECT COUNT(*) FROM items WHERE pinned = 0", [], |r| r.get(0))?;
+            .query_row(
+                "SELECT COUNT(*) FROM items WHERE namespace = ?1 AND pinned = 0",
+                params![namespace],
+                |r| r.get(0),
+            )?;
         let max = max_items as i64;
         if count <= max { return Ok(Vec::new()); }
         let excess = count - max;
         let mut imgs = Vec::new();
         let mut stmt = self.conn.prepare(
             "SELECT id, image_path FROM items
-             WHERE pinned = 0
+             WHERE namespace = ?1 AND pinned = 0
              ORDER BY last_used_at ASC
-             LIMIT ?1",
+             LIMIT ?2",
         )?;
-        let mut rows = stmt.query(params![excess])?;
+        let mut rows = stmt.query(params![namespace, excess])?;
         let mut ids: Vec<i64> = Vec::new();
         while let Some(r) = rows.next()? {
             ids.push(r.get::<_, i64>(0)?);
@@ -305,23 +351,22 @@ impl Storage {
         Ok(imgs)
     }
 
-    /// Delete non-pinned items older than `days` (by last_used_at).
-    pub fn prune_older_than(&mut self, days: u32) -> Result<Vec<String>> {
+    pub fn prune_older_than(&mut self, days: u32, namespace: &str) -> Result<Vec<String>> {
         if days == 0 { return Ok(Vec::new()); }
         let cutoff = chrono::Utc::now().timestamp_millis() - (days as i64) * 86_400_000;
         let mut imgs = Vec::new();
         let mut stmt = self.conn.prepare(
-            "SELECT image_path FROM items WHERE pinned = 0 AND last_used_at < ?1 AND image_path IS NOT NULL",
+            "SELECT image_path FROM items WHERE namespace = ?1 AND pinned = 0 AND last_used_at < ?2 AND image_path IS NOT NULL",
         )?;
-        let mut rows = stmt.query(params![cutoff])?;
+        let mut rows = stmt.query(params![namespace, cutoff])?;
         while let Some(r) = rows.next()? {
             if let Ok(Some(p)) = r.get::<_, Option<String>>(0) { imgs.push(p); }
         }
         drop(rows);
         drop(stmt);
         self.conn.execute(
-            "DELETE FROM items WHERE pinned = 0 AND last_used_at < ?1",
-            params![cutoff],
+            "DELETE FROM items WHERE namespace = ?1 AND pinned = 0 AND last_used_at < ?2",
+            params![namespace, cutoff],
         )?;
         Ok(imgs)
     }

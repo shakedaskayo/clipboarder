@@ -3,7 +3,7 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::paste;
 use crate::settings::Settings;
-use crate::storage::ClipItem;
+use crate::storage::{ClipItem, DEFAULT_NAMESPACE};
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -20,15 +20,16 @@ fn err(e: anyhow::Error) -> String { format!("{e:#}") }
 #[tauri::command]
 pub fn search_items(state: State<AppState>, args: QueryArgs) -> CmdResult<Vec<ClipItem>> {
     let db = state.db.lock();
-    db.search(&args.query, &args.kind, args.limit.max(1)).map_err(err)
+    db.search(&args.query, &args.kind, args.limit.max(1), DEFAULT_NAMESPACE)
+        .map_err(err)
 }
 
 #[tauri::command]
 pub fn paste_item(app: AppHandle, state: State<AppState>, id: i64) -> CmdResult<()> {
     let item = {
         let mut db = state.db.lock();
-        let it = db.get(id).map_err(err)?;
-        if it.is_some() { db.bump(id).map_err(err)?; }
+        let it = db.get(id, DEFAULT_NAMESPACE).map_err(err)?;
+        if it.is_some() { db.bump(id, DEFAULT_NAMESPACE).map_err(err)?; }
         it
     };
     let Some(item) = item else {
@@ -53,8 +54,8 @@ pub fn paste_item(app: AppHandle, state: State<AppState>, id: i64) -> CmdResult<
 pub fn copy_item(state: State<AppState>, id: i64) -> CmdResult<()> {
     let item = {
         let mut db = state.db.lock();
-        let it = db.get(id).map_err(err)?;
-        if it.is_some() { db.bump(id).map_err(err)?; }
+        let it = db.get(id, DEFAULT_NAMESPACE).map_err(err)?;
+        if it.is_some() { db.bump(id, DEFAULT_NAMESPACE).map_err(err)?; }
         it
     };
     let Some(item) = item else { return Err("item not found".into()); };
@@ -65,14 +66,14 @@ pub fn copy_item(state: State<AppState>, id: i64) -> CmdResult<()> {
 #[tauri::command]
 pub fn toggle_pin(state: State<AppState>, id: i64) -> CmdResult<bool> {
     let mut db = state.db.lock();
-    db.toggle_pin(id).map_err(err)
+    db.toggle_pin(id, DEFAULT_NAMESPACE).map_err(err)
 }
 
 #[tauri::command]
 pub fn delete_item(state: State<AppState>, id: i64) -> CmdResult<()> {
     let img = {
         let mut db = state.db.lock();
-        db.delete(id).map_err(err)?
+        db.delete(id, DEFAULT_NAMESPACE).map_err(err)?
     };
     if let Some(path) = img { let _ = std::fs::remove_file(path); }
     Ok(())
@@ -82,7 +83,7 @@ pub fn delete_item(state: State<AppState>, id: i64) -> CmdResult<()> {
 pub fn clear_history(state: State<AppState>) -> CmdResult<()> {
     let imgs = {
         let mut db = state.db.lock();
-        db.clear().map_err(err)?
+        db.clear(DEFAULT_NAMESPACE).map_err(err)?
     };
     for p in imgs { let _ = std::fs::remove_file(p); }
     Ok(())

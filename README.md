@@ -269,6 +269,26 @@ watch                 stream new items as JSON Lines
 
 Every command supports `--json` for machine-readable output. Full reference: <https://shakedaskayo.github.io/clipboarder/cli-reference/>.
 
+### Shared server mode
+
+clipboarder can run as a multi-namespace HTTP backend. Multiple clients connect with bearer tokens; each is scoped to its own namespace — content, FTS index, pins, and stats are fully isolated.
+
+```bash
+# Server side
+clipboarder admin token create --namespace alice --label "Alice's MacBook"
+# → tk_…  (paste this on the client)
+clipboarder serve --bind 0.0.0.0:7474
+
+# Client side (any machine)
+export CLIPBOARDER_SERVER='http://your-server:7474'
+export CLIPBOARDER_TOKEN='tk_…'
+curl -s -H "Authorization: Bearer $CLIPBOARDER_TOKEN" "$CLIPBOARDER_SERVER/v1/items?limit=5"
+```
+
+REST endpoints: `/v1/health`, `/v1/whoami`, `/v1/items`, `/v1/items/:id`, `/v1/items/:id/pin`, `/v1/clear`, `/v1/stats`, `/v1/watch` (SSE).
+
+Full deployment guide (Caddy / Nginx / systemd / launchd) at [docs / Server mode](https://shakedaskayo.github.io/clipboarder/server/). [27 integration tests](scripts/test-server.sh) gate the namespace isolation in CI.
+
 ### For AI agents — drop-in Claude Code skill
 
 ```bash

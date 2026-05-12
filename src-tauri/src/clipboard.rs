@@ -15,7 +15,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::classify::{self, Kind};
 use crate::settings::SettingsStore;
-use crate::storage::{NewItem, Storage};
+use crate::storage::{NewItem, Storage, DEFAULT_NAMESPACE};
 
 pub fn start_watcher(
     app: AppHandle,
@@ -76,7 +76,7 @@ impl Handler {
                     image_path: None,
                     content_hash: &hash,
                     size: text.len() as i64,
-                })?;
+                }, DEFAULT_NAMESPACE)?;
                 drop(db);
                 *self.last_hash.lock() = hash;
                 self.enforce_limits();
@@ -124,7 +124,7 @@ impl Handler {
                     image_path: None,
                     content_hash: &hash,
                     size: joined.len() as i64,
-                })?;
+                }, DEFAULT_NAMESPACE)?;
                 drop(db);
                 *self.last_hash.lock() = hash;
                 self.enforce_limits();
@@ -163,7 +163,7 @@ impl Handler {
             image_path: path.to_str(),
             content_hash: &hash,
             size: bytes.len() as i64,
-        })?;
+        }, DEFAULT_NAMESPACE)?;
         drop(db);
         *self.last_hash.lock() = hash;
         Ok(())
@@ -200,7 +200,7 @@ impl Handler {
         if s.max_items == 0 && s.auto_clear_days == 0 { return; }
         let mut db = self.storage.lock();
         if s.max_items > 0 {
-            if let Ok(paths) = db.enforce_limit(s.max_items) {
+            if let Ok(paths) = db.enforce_limit(s.max_items, DEFAULT_NAMESPACE) {
                 drop(db);
                 for p in paths { let _ = std::fs::remove_file(p); }
             }

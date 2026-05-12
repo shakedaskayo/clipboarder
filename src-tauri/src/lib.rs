@@ -5,6 +5,8 @@ mod commands;
 pub mod cli;
 mod paste;
 pub mod secrets;
+pub mod server;
+pub mod server_config;
 mod settings;
 pub mod storage;
 mod url_meta;
@@ -73,12 +75,12 @@ pub fn run() {
                 let s = settings_store.get();
                 let mut db = storage.lock();
                 if s.max_items > 0 {
-                    if let Ok(paths) = db.enforce_limit(s.max_items) {
+                    if let Ok(paths) = db.enforce_limit(s.max_items, storage::DEFAULT_NAMESPACE) {
                         for p in paths { let _ = std::fs::remove_file(p); }
                     }
                 }
                 if s.auto_clear_days > 0 {
-                    if let Ok(paths) = db.prune_older_than(s.auto_clear_days) {
+                    if let Ok(paths) = db.prune_older_than(s.auto_clear_days, storage::DEFAULT_NAMESPACE) {
                         for p in paths { let _ = std::fs::remove_file(p); }
                     }
                 }
@@ -222,7 +224,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             }
             "clear" => {
                 if let Some(state) = app.try_state::<AppState>() {
-                    let imgs = state.db.lock().clear().unwrap_or_default();
+                    let imgs = state.db.lock().clear(storage::DEFAULT_NAMESPACE).unwrap_or_default();
                     for p in imgs {
                         let _ = std::fs::remove_file(p);
                     }

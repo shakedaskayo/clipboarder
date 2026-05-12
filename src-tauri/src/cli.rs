@@ -22,7 +22,7 @@ use serde::Serialize;
 
 use crate::classify;
 use crate::secrets;
-use crate::storage::{ClipItem, NewItem, Storage};
+use crate::storage::{ClipItem, NewItem, Storage, DEFAULT_NAMESPACE};
 
 /// Command vocabulary the dual-mode dispatch in main.rs recognizes. Listed
 /// here so the CLI and the dispatch logic stay in sync.
@@ -32,6 +32,7 @@ pub const SUBCOMMANDS: &[&str] = &[
     "delete", "rm", "clear", "copy", "stats", "watch",
     "cp", "pipe", "p", "paste", "last", "pop",
     "doctor", "test-paste",
+    "serve", "admin",
     "help", "-h", "--help", "-V", "--version",
 ];
 
@@ -258,6 +259,67 @@ pub enum Command {
         #[arg(short, long, default_value_t = 250)]
         delay_ms: u64,
     },
+
+    /// Run the HTTP server (a shared backend for multiple clients).
+    Serve {
+        /// Address to bind. Defaults to 127.0.0.1:7474. Use 0.0.0.0:7474 for
+        /// LAN access. Always front with a reverse proxy + TLS in production.
+        #[arg(long)]
+        bind: Option<String>,
+        /// Path to the server config TOML (token → namespace mapping).
+        /// Default: `~/Library/Application Support/com.clipboarder.app/server.toml`.
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+    },
+
+    /// Server administration: manage tokens and namespaces.
+    Admin {
+        #[command(subcommand)]
+        action: AdminCommand,
+    },
+}
+
+/// Admin subcommands. Edit the server's tokens + namespaces from the CLI.
+#[derive(Subcommand)]
+pub enum AdminCommand {
+    /// Token management.
+    Token {
+        #[command(subcommand)]
+        action: TokenAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum TokenAction {
+    /// Create a new bearer token bound to a namespace. Prints the new token
+    /// on stdout — copy it to your client immediately, it's not stored
+    /// anywhere else in human-readable form.
+    Create {
+        /// Namespace this token will access. Created on first use.
+        #[arg(long)]
+        namespace: String,
+        /// Optional human-readable label for the GUI / `whoami`.
+        #[arg(long)]
+        label: Option<String>,
+        /// Path to the server config TOML. See `clipboarder serve --help`.
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+    },
+
+    /// List existing tokens (token prefix only — full value isn't echoed).
+    List {
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Revoke a token by full value (or by prefix if unique).
+    Revoke {
+        token: String,
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+    },
 }
 
 /// Entry point invoked from main.rs when argv looks like CLI mode.
@@ -267,35 +329,118 @@ pub fn run() -> Result<()> {
     std::fs::create_dir_all(&data_dir).ok();
     let db_path = data_dir.join("clipboarder.sqlite");
     let mut storage = Storage::open(&db_path).context("open clipboarder database")?;
+    let ns = std::env::var("CLIPBOARDER_NAMESPACE").unwrap_or_else(|_| DEFAULT_NAMESPACE.into());
 
     match cli.command {
         Command::List { limit, kind, json, agent } => {
-            cmd_list(&storage, limit, kind, json, &agent)
+            cmd_list(&storage, limit, kind, json, &agent, &ns)
         }
         Command::Search { query, limit, kind, json, agent } => {
-            cmd_search(&storage, &query, limit, kind, json, &agent)
+            cmd_search(&storage, &query, limit, kind, json, &agent, &ns)
         }
-        Command::Show { id, json } => cmd_show(&storage, id, json),
+        Command::Show { id, json } => cmd_show(&storage, id, json, &ns),
         Command::Add { text, kind, copy, source, json } => {
-            cmd_add(&mut storage, text, kind, copy, source, json)
+            cmd_add(&mut storage, text, kind, copy, source, json, &ns)
         }
-        Command::Pin { id } => cmd_set_pin(&mut storage, id, true),
-        Command::Unpin { id } => cmd_set_pin(&mut storage, id, false),
-        Command::Delete { id } => cmd_delete(&mut storage, id),
-        Command::Clear { yes } => cmd_clear(&mut storage, yes),
-        Command::Copy { id } => cmd_copy(&storage, id),
-        Command::Stats { json } => cmd_stats(&storage, json),
-        Command::Watch { kind } => cmd_watch(&storage, kind),
+        Command::Pin { id } => cmd_set_pin(&mut storage, id, true, &ns),
+        Command::Unpin { id } => cmd_set_pin(&mut storage, id, false, &ns),
+        Command::Delete { id } => cmd_delete(&mut storage, id, &ns),
+        Command::Clear { yes } => cmd_clear(&mut storage, yes, &ns),
+        Command::Copy { id } => cmd_copy(&storage, id, &ns),
+        Command::Stats { json } => cmd_stats(&storage, json, &ns),
+        Command::Watch { kind } => cmd_watch(&storage, kind, &ns),
         Command::Cp { kind, source, no_clipboard, json } => {
-            cmd_add(&mut storage, None, kind, !no_clipboard, Some(source), json)
+            cmd_add(&mut storage, None, kind, !no_clipboard, Some(source), json, &ns)
         }
         Command::P { n, kind, grep, copy, all, json, agent } => {
-            cmd_paste(&storage, n, kind, grep, copy, all, json, &agent)
+            cmd_paste(&storage, n, kind, grep, copy, all, json, &agent, &ns)
         }
-        Command::Pop { kind } => cmd_pop(&mut storage, kind),
-        Command::Doctor => cmd_doctor(&storage),
+        Command::Pop { kind } => cmd_pop(&mut storage, kind, &ns),
+        Command::Doctor => cmd_doctor(&storage, &ns),
         Command::TestPaste { marker, delay_ms } => cmd_test_paste(&marker, delay_ms),
+        Command::Serve { bind, config } => cmd_serve(bind, config),
+        Command::Admin { action } => cmd_admin(action),
     }
+}
+
+// ── server / admin ────────────────────────────────────────────────────────
+
+fn cmd_serve(
+    bind: Option<String>,
+    config: Option<std::path::PathBuf>,
+) -> Result<()> {
+    let config_path = config.unwrap_or_else(crate::server_config::default_config_path);
+    let runtime = tokio::runtime::Runtime::new().context("tokio runtime")?;
+    runtime.block_on(crate::server::run(config_path, bind))
+}
+
+fn cmd_admin(action: AdminCommand) -> Result<()> {
+    use crate::server_config::{generate_token, ServerConfig, TokenEntry};
+    match action {
+        AdminCommand::Token { action } => match action {
+            TokenAction::Create { namespace, label, config } => {
+                let path = config.unwrap_or_else(crate::server_config::default_config_path);
+                let mut cfg = ServerConfig::load(&path)?;
+                let token = generate_token();
+                cfg.tokens.push(TokenEntry {
+                    token: token.clone(),
+                    namespace: namespace.clone(),
+                    label,
+                });
+                cfg.save(&path)?;
+                println!("{token}");
+                eprintln!("  ↑ bearer token for namespace `{namespace}` — saved to {}", path.display());
+                eprintln!("  Set on the client:");
+                eprintln!("    export CLIPBOARDER_SERVER='http://<host>:7474'");
+                eprintln!("    export CLIPBOARDER_TOKEN='{token}'");
+            }
+            TokenAction::List { config, json } => {
+                let path = config.unwrap_or_else(crate::server_config::default_config_path);
+                let cfg = ServerConfig::load(&path)?;
+                if json {
+                    let view: Vec<_> = cfg
+                        .tokens
+                        .iter()
+                        .map(|t| {
+                            serde_json::json!({
+                                "prefix": &t.token[..t.token.len().min(8)],
+                                "namespace": &t.namespace,
+                                "label": &t.label,
+                            })
+                        })
+                        .collect();
+                    println!("{}", serde_json::to_string_pretty(&view)?);
+                } else if cfg.tokens.is_empty() {
+                    eprintln!("(no tokens — run `clipboarder admin token create --namespace …`)");
+                } else {
+                    println!("{:<12}  {:<24}  {}", "PREFIX", "NAMESPACE", "LABEL");
+                    for t in &cfg.tokens {
+                        let prefix = format!("{}…", &t.token[..t.token.len().min(8)]);
+                        println!(
+                            "{:<12}  {:<24}  {}",
+                            prefix,
+                            t.namespace,
+                            t.label.as_deref().unwrap_or("")
+                        );
+                    }
+                }
+            }
+            TokenAction::Revoke { token, config } => {
+                let path = config.unwrap_or_else(crate::server_config::default_config_path);
+                let mut cfg = ServerConfig::load(&path)?;
+                let before = cfg.tokens.len();
+                cfg.tokens.retain(|t| t.token != token && !t.token.starts_with(&token));
+                let removed = before - cfg.tokens.len();
+                if removed == 0 {
+                    eprintln!("no token matched `{token}`");
+                    std::process::exit(1);
+                }
+                cfg.save(&path)?;
+                eprintln!("revoked {removed} token(s)");
+            }
+        },
+    }
+    Ok(())
 }
 
 // ── duration parser ─────────────────────────────────────────────────────────
@@ -435,7 +580,7 @@ fn cmd_test_paste(marker: &str, delay_ms: u64) -> Result<()> {
     Ok(())
 }
 
-fn cmd_doctor(storage: &Storage) -> Result<()> {
+fn cmd_doctor(storage: &Storage, ns: &str) -> Result<()> {
     let ok = "\x1b[32m✓\x1b[0m";
     let warn = "\x1b[33m⚠\x1b[0m";
     let bad = "\x1b[31m✗\x1b[0m";
@@ -451,9 +596,9 @@ fn cmd_doctor(storage: &Storage) -> Result<()> {
         println!("{bad} data dir       {} (missing — has the GUI ever launched?)", dir.display());
     }
 
-    // 2) Item count via the existing storage handle
-    let total = storage.search("", "all", 1_000_000).map(|v| v.len()).unwrap_or(0);
-    println!("{ok} history items  {total}");
+    // 2) Item count via the existing storage handle (in the active namespace)
+    let total = storage.search("", "all", 1_000_000, ns).map(|v| v.len()).unwrap_or(0);
+    println!("{ok} history items  {total} (namespace: {ns})");
 
     // 3) GUI process running?
     let running = process_running("clipboarder");
@@ -518,8 +663,9 @@ fn cmd_list(
     kind: Option<String>,
     json: bool,
     agent: &AgentOpts,
+    ns: &str,
 ) -> Result<()> {
-    let items = storage.search("", &normalize_kind(kind), limit)?;
+    let items = storage.search("", &normalize_kind(kind), limit, ns)?;
     let items = apply_agent_opts(&items, None, agent);
     emit_items(&items, json, agent.compact);
     Ok(())
@@ -532,15 +678,16 @@ fn cmd_search(
     kind: Option<String>,
     json: bool,
     agent: &AgentOpts,
+    ns: &str,
 ) -> Result<()> {
-    let items = storage.search(query, &normalize_kind(kind), limit)?;
+    let items = storage.search(query, &normalize_kind(kind), limit, ns)?;
     let items = apply_agent_opts(&items, Some(query), agent);
     emit_items(&items, json, agent.compact);
     Ok(())
 }
 
-fn cmd_show(storage: &Storage, id: i64, json: bool) -> Result<()> {
-    let Some(item) = storage.get(id)? else {
+fn cmd_show(storage: &Storage, id: i64, json: bool, ns: &str) -> Result<()> {
+    let Some(item) = storage.get(id, ns)? else {
         eprintln!("item #{id} not found");
         std::process::exit(1);
     };
@@ -562,6 +709,7 @@ fn cmd_add(
     also_copy: bool,
     source: Option<String>,
     json: bool,
+    ns: &str,
 ) -> Result<()> {
     let body = match text {
         Some(t) => t,
@@ -594,7 +742,7 @@ fn cmd_add(
         image_path: None,
         content_hash: &hash,
         size: body.len() as i64,
-    })?;
+    }, ns)?;
 
     if also_copy {
         write_clipboard_text(&body).context("set system clipboard")?;
@@ -611,8 +759,8 @@ fn cmd_add(
 
 // ── pin / unpin / delete / clear ────────────────────────────────────────────
 
-fn cmd_set_pin(storage: &mut Storage, id: i64, want_pinned: bool) -> Result<()> {
-    let cur = storage.get(id)?;
+fn cmd_set_pin(storage: &mut Storage, id: i64, want_pinned: bool, ns: &str) -> Result<()> {
+    let cur = storage.get(id, ns)?;
     let Some(cur) = cur else {
         eprintln!("item #{id} not found");
         std::process::exit(1);
@@ -620,21 +768,21 @@ fn cmd_set_pin(storage: &mut Storage, id: i64, want_pinned: bool) -> Result<()> 
     if cur.pinned == want_pinned {
         return Ok(());
     }
-    storage.toggle_pin(id)?;
+    storage.toggle_pin(id, ns)?;
     Ok(())
 }
 
-fn cmd_delete(storage: &mut Storage, id: i64) -> Result<()> {
-    if storage.get(id)?.is_none() {
+fn cmd_delete(storage: &mut Storage, id: i64, ns: &str) -> Result<()> {
+    if storage.get(id, ns)?.is_none() {
         eprintln!("item #{id} not found");
         std::process::exit(1);
     }
-    let img = storage.delete(id)?;
+    let img = storage.delete(id, ns)?;
     if let Some(p) = img { let _ = std::fs::remove_file(p); }
     Ok(())
 }
 
-fn cmd_clear(storage: &mut Storage, yes: bool) -> Result<()> {
+fn cmd_clear(storage: &mut Storage, yes: bool, ns: &str) -> Result<()> {
     if !yes {
         eprint!("Clear all non-pinned items? [y/N] ");
         std::io::stderr().flush().ok();
@@ -645,15 +793,15 @@ fn cmd_clear(storage: &mut Storage, yes: bool) -> Result<()> {
             std::process::exit(2);
         }
     }
-    let images = storage.clear()?;
+    let images = storage.clear(ns)?;
     for p in images { let _ = std::fs::remove_file(p); }
     Ok(())
 }
 
 // ── copy ─────────────────────────────────────────────────────────────────────
 
-fn cmd_copy(storage: &Storage, id: i64) -> Result<()> {
-    let Some(item) = storage.get(id)? else {
+fn cmd_copy(storage: &Storage, id: i64, ns: &str) -> Result<()> {
+    let Some(item) = storage.get(id, ns)? else {
         eprintln!("item #{id} not found");
         std::process::exit(1);
     };
@@ -679,8 +827,8 @@ struct Stats {
     db_size_bytes: u64,
 }
 
-fn cmd_stats(storage: &Storage, json: bool) -> Result<()> {
-    let all = storage.search("", "all", 1_000_000)?;
+fn cmd_stats(storage: &Storage, json: bool, ns: &str) -> Result<()> {
+    let all = storage.search("", "all", 1_000_000, ns)?;
     let total = all.len() as i64;
     let pinned = all.iter().filter(|i| i.pinned).count() as i64;
     let mut by_kind = std::collections::BTreeMap::new();
@@ -723,6 +871,7 @@ fn cmd_paste(
     all: bool,
     json: bool,
     agent: &AgentOpts,
+    ns: &str,
 ) -> Result<()> {
     if n == 0 {
         eprintln!("position N must be >= 1");
@@ -731,7 +880,7 @@ fn cmd_paste(
     let query = grep.clone().unwrap_or_default();
     let kind_str = normalize_kind(kind);
     let limit = if all { 10_000 } else { n as i64 };
-    let raw = storage.search(&query, &kind_str, limit)?;
+    let raw = storage.search(&query, &kind_str, limit, ns)?;
     let items = apply_agent_opts(&raw, grep.as_deref(), agent);
 
     if items.is_empty() {
@@ -796,31 +945,31 @@ fn emit_one(item: &ClipItem, json: bool, compact: bool) {
     }
 }
 
-fn cmd_pop(storage: &mut Storage, kind: Option<String>) -> Result<()> {
+fn cmd_pop(storage: &mut Storage, kind: Option<String>, ns: &str) -> Result<()> {
     let kind_str = normalize_kind(kind);
-    let items = storage.search("", &kind_str, 1)?;
+    let items = storage.search("", &kind_str, 1, ns)?;
     let Some(item) = items.into_iter().next() else {
         eprintln!("history is empty");
         std::process::exit(1);
     };
     emit_one(&item, false, false);
-    let img = storage.delete(item.id)?;
+    let img = storage.delete(item.id, ns)?;
     if let Some(p) = img { let _ = std::fs::remove_file(p); }
     Ok(())
 }
 
 // ── watch ────────────────────────────────────────────────────────────────────
 
-fn cmd_watch(storage: &Storage, kind: Option<String>) -> Result<()> {
+fn cmd_watch(storage: &Storage, kind: Option<String>, ns: &str) -> Result<()> {
     let kind = normalize_kind(kind);
     let mut last_max: i64 = storage
-        .search("", &kind, 1)?
+        .search("", &kind, 1, ns)?
         .first()
         .map(|it| it.id)
         .unwrap_or(0);
     loop {
         std::thread::sleep(std::time::Duration::from_millis(500));
-        let recent = storage.search("", &kind, 50)?;
+        let recent = storage.search("", &kind, 50, ns)?;
         let mut new_items: Vec<&ClipItem> =
             recent.iter().filter(|it| it.id > last_max).collect();
         new_items.sort_by_key(|it| it.id);

@@ -106,6 +106,8 @@ nav:
     - watch: cli-reference/watch.md
   - For agents:
     - Integration: agents/index.md
+  - Server mode:
+    - Overview & deployment: server/index.md
   - Architecture:
     - Overview: architecture/index.md
     - Classification: architecture/classification.md
