@@ -191,13 +191,13 @@ fn detect_code(text: &str) -> Option<&'static str> {
     if t.contains("::") { score += 1; }
 
     // Single-line that smells like a command
-    if !multiline {
-        if t.starts_with("$ ") || t.starts_with("> ") || t.starts_with("npm ")
+    if !multiline
+        && (t.starts_with("$ ") || t.starts_with("> ") || t.starts_with("npm ")
             || t.starts_with("yarn ") || t.starts_with("git ")
             || t.starts_with("cargo ") || t.starts_with("brew ")
-            || t.starts_with("docker ") || t.starts_with("kubectl ") {
-            return Some("shell");
-        }
+            || t.starts_with("docker ") || t.starts_with("kubectl "))
+    {
+        return Some("shell");
     }
 
     if score < 2 { return None; }

@@ -203,7 +203,6 @@ impl Handler {
             if let Ok(paths) = db.enforce_limit(s.max_items) {
                 drop(db);
                 for p in paths { let _ = std::fs::remove_file(p); }
-                return;
             }
         }
     }

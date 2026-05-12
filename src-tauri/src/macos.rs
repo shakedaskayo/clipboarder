@@ -1,5 +1,14 @@
 //! macOS native helpers: window panel-style tweaks + frontmost-app detection.
+//!
+//! Uses the (deprecated) `cocoa` crate for stability. The successor
+//! `objc2-app-kit` has shifted its API between versions; pinning to the
+//! mature cocoa crate is more reliable for now.
 #![cfg(target_os = "macos")]
+#![allow(deprecated)]
+// The objc crate's `sel_impl!` macro internally uses
+// `cfg(feature = "cargo-clippy")` — an old idiom. Suppress the lint at the
+// boundary so we don't have to fork or patch upstream.
+#![allow(unexpected_cfgs)]
 
 use cocoa::appkit::{NSWindow, NSWindowCollectionBehavior};
 use cocoa::base::{id, nil};

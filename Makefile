@@ -31,7 +31,7 @@ test:
 	npx tsc --noEmit
 
 lint:
-	cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+	cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps -- -D warnings -A unexpected_cfgs -A deprecated
 	cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
 fmt:

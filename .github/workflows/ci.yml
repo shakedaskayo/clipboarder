@@ -56,4 +56,7 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run build
-      - run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+      # -A unexpected_cfgs: the (deprecated but still-used) `cocoa` + `objc`
+      # crates emit `cfg(feature = "cargo-clippy")` from their macros, which
+      # newer rustc flags. We don't want to fork upstream just for that.
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps -- -D warnings -A unexpected_cfgs -A deprecated
