@@ -1,0 +1,46 @@
+[package]
+name = "clipboarder"
+version = "0.1.0"
+description = "A fast, beautiful clipboard manager"
+authors = ["clipboarder"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "clipboarder_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "tray-icon", "image-png", "protocol-asset"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-opener = "2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "gzip", "brotli"] }
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+clipboard-rs = "0.2"
+sha2 = "0.10"
+image = { version = "0.25", default-features = false, features = ["png"] }
+url = "2"
+once_cell = "1"
+regex-lite = "0.1"
+anyhow = "1"
+directories = "5"
+parking_lot = "0.12"
+chrono = "0.4"
+tokio = { version = "1", features = ["sync", "rt", "macros", "time"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-graphics = "0.24"
+core-foundation = "0.10"
+cocoa = "0.26"
+objc = "0.2"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

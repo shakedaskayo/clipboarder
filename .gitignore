@@ -1,0 +1,26 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# Tauri / Cargo
+src-tauri/target
+src-tauri/gen/schemas
+src-tauri/Cargo.lock
+
+# Docs build output
+docs/site
+
+# Local logs
+*.log
+/tmp/
+
+# Python / pip user installs
+__pycache__/
+*.pyc

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/shakedaskayo/clipboarder/discussions
+    about: Questions, ideas, and show-and-tell go here.
+  - name: Security
+    url: https://github.com/shakedaskayo/clipboarder/security/advisories/new
+    about: Report a security vulnerability privately.

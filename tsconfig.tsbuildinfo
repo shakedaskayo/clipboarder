@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/chips.tsx","./src/components/preview.tsx","./src/components/row.tsx","./src/lib/api.ts","./src/lib/color.ts","./src/lib/format.ts","./src/lib/icons.tsx","./src/lib/types.ts"],"version":"5.9.3"}

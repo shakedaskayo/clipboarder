@@ -1,0 +1,100 @@
+site_name: clipboarder
+site_description: A faster, smarter, more beautiful clipboard manager for macOS
+site_url: https://shakedaskayo.github.io/clipboarder
+repo_url: https://github.com/shakedaskayo/clipboarder
+repo_name: shakedaskayo/clipboarder
+edit_uri: edit/main/docs/docs/
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/shakedaskayo/clipboarder
+  generator: false
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.mark
+  - attr_list
+  - md_in_html
+  - tables
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Overview: getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quickstart: getting-started/quickstart.md
+  - Using clipboarder:
+    - Overview: usage/index.md
+    - Search & filters: usage/search.md
+    - Keyboard shortcuts: usage/shortcuts.md
+    - Content types: usage/content-types.md
+    - Pinning & history: usage/pinning.md
+  - Settings:
+    - Overview: settings/index.md
+    - Hotkey: settings/hotkey.md
+    - History limits: settings/history.md
+    - Privacy & exclusions: settings/privacy.md
+    - Launch at login: settings/launch-at-login.md
+  - Architecture:
+    - Overview: architecture/index.md
+    - Classification: architecture/classification.md
+    - Storage & search: architecture/storage.md
+    - Paste-back: architecture/paste-back.md
+  - Contributing: contributing/index.md
