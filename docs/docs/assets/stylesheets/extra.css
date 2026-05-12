@@ -81,3 +81,62 @@
   color: var(--md-default-fg-color--light);
   line-height: 1.55;
 }
+
+/* Mobile: smaller hero, single-column feature grid, no horizontal overflow */
+@media (max-width: 768px) {
+  .md-typeset .clipboarder-hero {
+    padding: 1.5rem 0.5rem 0.5rem;
+  }
+  .md-typeset .clipboarder-hero img {
+    width: 96px;
+    height: 96px;
+  }
+  .md-typeset .clipboarder-hero h1 {
+    font-size: 2.25rem;
+  }
+  .md-typeset .clipboarder-hero .tagline {
+    font-size: 1rem;
+  }
+  .md-typeset .install-cmd pre {
+    font-size: 0.78rem;
+    overflow-x: auto;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .md-typeset .clipboarder-hero h1 {
+    font-size: 1.85rem;
+  }
+  .md-typeset .clipboarder-hero img {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* Screenshots inside the docs should always fit the viewport width, with
+   a subtle rounded chrome so they look like polished captures. */
+.md-typeset img[src*="screenshots/"] {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin: 0.5rem 0 1rem;
+}
+
+/* Tabbed content (used for the kind gallery) should not break out of the
+   page on small screens. */
+.md-typeset .tabbed-set,
+.md-typeset .tabbed-content {
+  max-width: 100%;
+}
+
+/* Mermaid diagrams and ASCII boxes can be wide — let them scroll horizontally
+   instead of overflowing. */
+.md-typeset pre,
+.md-typeset code {
+  max-width: 100%;
+}
