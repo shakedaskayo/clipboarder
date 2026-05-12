@@ -175,6 +175,30 @@ open -a clipboarder
 
 <br>
 
+## CLI
+
+The same binary that runs the GUI also runs as a CLI when invoked with a subcommand. `install.sh` symlinks `clipboarder` onto your `$PATH`.
+
+```bash
+clipboarder list                           # recent items
+clipboarder search "github" --json         # FTS search
+clipboarder show 42                        # full content
+clipboarder add "remember this" --json     # ingest from arg
+git log --oneline -5 | clipboarder add     # ingest from stdin
+clipboarder pin 42                         # star
+clipboarder copy 42                        # put on macOS clipboard
+clipboarder stats --json                   # by-kind counts + db size
+clipboarder watch                          # stream new copies as JSON Lines
+```
+
+Every command supports `--json` for machine-readable output. Full reference: <https://shakedaskayo.github.io/clipboarder/cli-reference/>.
+
+### For AI agents
+
+A drop-in **Claude Skill** is shipped at [`agents/.claude/skills/clipboarder/SKILL.md`](agents/.claude/skills/clipboarder/SKILL.md) — copy it to `~/.claude/skills/clipboarder/SKILL.md` and Claude auto-loads it. For LangChain, OpenAI Assistants, or any other harness, see [docs / For agents](https://shakedaskayo.github.io/clipboarder/agents/) for tool definitions and best practices (privacy, result-size caps, kind filtering, secret-detection heuristics).
+
+<br>
+
 ## Keyboard Shortcuts
 
 | Shortcut | Action |

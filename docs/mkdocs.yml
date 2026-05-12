@@ -92,6 +92,14 @@ nav:
     - History limits: settings/history.md
     - Privacy & exclusions: settings/privacy.md
     - Launch at login: settings/launch-at-login.md
+  - CLI:
+    - Overview: cli-reference/index.md
+    - list: cli-reference/list.md
+    - search: cli-reference/search.md
+    - show: cli-reference/show.md
+    - add: cli-reference/add.md
+  - For agents:
+    - Integration: agents/index.md
   - Architecture:
     - Overview: architecture/index.md
     - Classification: architecture/classification.md

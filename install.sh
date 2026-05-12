@@ -164,6 +164,33 @@ trap - EXIT
 
 ok "Installed clipboarder ${TAG} → ${DEST}"
 
+# ── CLI symlink ──────────────────────────────────────────────────────
+# The .app's binary is dual-mode: no args → GUI, subcommand → CLI. Drop
+# a symlink somewhere on PATH so users can run `clipboarder list` etc.
+APP_BIN="${DEST}/Contents/MacOS/clipboarder"
+CLI_LINK=""
+for dir in /usr/local/bin "$HOME/.local/bin"; do
+  mkdir -p "$dir" 2>/dev/null || true
+  if [ -w "$dir" ]; then
+    if ln -sf "$APP_BIN" "$dir/clipboarder" 2>/dev/null; then
+      CLI_LINK="$dir/clipboarder"
+      break
+    fi
+  fi
+done
+
+if [ -n "$CLI_LINK" ]; then
+  ok "CLI symlink: ${CLI_LINK} → ${APP_BIN}"
+  case ":$PATH:" in
+    *":${CLI_LINK%/clipboarder}:"*) : ;;
+    *)
+      warn "${CLI_LINK%/clipboarder} is not on \$PATH — add it to ~/.zshrc to use \`clipboarder\` from any shell"
+      ;;
+  esac
+else
+  warn "Couldn't create a CLI symlink (need /usr/local/bin or ~/.local/bin writable). The GUI still works."
+fi
+
 if [ "$AUTO_LAUNCH" = "1" ]; then
   log "Launching clipboarder…"
   open -a "$DEST"
@@ -181,6 +208,8 @@ ${CLR_BOLD}Next steps:${CLR_RESET}
   • ${CLR_BOLD}⌘⇧V${CLR_RESET} from anywhere   summon the overlay
   • ${CLR_BOLD}⌘,${CLR_RESET}                   open Settings (rebind the hotkey,
                           launch at login, privacy exclusions)
+  • ${CLR_BOLD}clipboarder list${CLR_RESET}     CLI access — search/ingest from any shell
+  • ${CLR_BOLD}clipboarder --help${CLR_RESET}   all subcommands
 
 Docs: https://shakedaskayo.github.io/clipboarder
 EOF

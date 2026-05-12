@@ -1,10 +1,11 @@
 mod app_icons;
-mod classify;
+pub mod classify;
 mod clipboard;
 mod commands;
+pub mod cli;
 mod paste;
 mod settings;
-mod storage;
+pub mod storage;
 mod url_meta;
 
 #[cfg(target_os = "macos")]
