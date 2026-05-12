@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://shakedaskayo.github.io/clipboarder/usage/">
+        <link rel="canonical" href="https://shakedaskayo.github.io/clipboarder/server/">
       
       
-        <link rel="prev" href="../getting-started/quickstart/">
+        <link rel="prev" href="../agents/">
       
       
-        <link rel="next" href="search/">
+        <link rel="next" href="../architecture/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Overview - clipboarder</title>
+        <title>Overview & deployment - clipboarder</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#using-clipboarder" class="md-skip">
+        <a href="#server-mode" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Overview & deployment
             
           </span>
         </div>
@@ -263,13 +263,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../usage/" class="md-tabs__link">
           
   
   
@@ -345,11 +343,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../server/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -618,31 +618,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -660,7 +655,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -675,37 +670,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
         
   
   
@@ -721,48 +689,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#the-overlay" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The overlay
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#read-these-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Read these next
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -775,7 +701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="search/" class="md-nav__link">
+      <a href="../usage/search/" class="md-nav__link">
         
   
   
@@ -803,7 +729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="shortcuts/" class="md-nav__link">
+      <a href="../usage/shortcuts/" class="md-nav__link">
         
   
   
@@ -831,7 +757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="content-types/" class="md-nav__link">
+      <a href="../usage/content-types/" class="md-nav__link">
         
   
   
@@ -859,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="pinning/" class="md-nav__link">
+      <a href="../usage/pinning/" class="md-nav__link">
         
   
   
@@ -1544,26 +1470,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -1581,7 +1512,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1596,10 +1527,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../server/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview & deployment
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1615,6 +1573,181 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST endpoints
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="REST endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse-v1watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE — /v1/watch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caddy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caddy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nginx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nginx
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#systemd-unit-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        systemd unit (Linux)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launchd-macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        launchd (macOS)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespace-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespace isolation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roadmap
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1852,10 +1985,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-overlay" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The overlay
+        Quick start
       
     </span>
   </a>
@@ -1863,10 +1996,143 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#read-these-next" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Read these next
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST endpoints
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="REST endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse-v1watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE — /v1/watch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caddy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caddy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nginx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nginx
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#systemd-unit-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        systemd unit (Linux)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launchd-macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        launchd (macOS)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespace-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespace isolation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roadmap
       
     </span>
   </a>
@@ -1890,7 +2156,7 @@
 
 
   
-    <a href="https://github.com/shakedaskayo/clipboarder/edit/main/docs/docs/usage/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/shakedaskayo/clipboarder/edit/main/docs/docs/server/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1898,36 +2164,219 @@
   
 
 
-<h1 id="using-clipboarder">Using clipboarder<a class="headerlink" href="#using-clipboarder" title="Permanent link">&para;</a></h1>
-<p>clipboarder is intentionally keyboard-first. You shouldn't have to take your hands off the keyboard to find and paste a piece of history.</p>
-<h2 id="the-overlay">The overlay<a class="headerlink" href="#the-overlay" title="Permanent link">&para;</a></h2>
-<p>The clipboarder overlay is a single 880×520 window with five regions:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─ Search ──────────────────────────────────────┐
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ 🔍  Search clipboard…              ↑↓ ↵       │
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├─ Filter chips ────────────────────────────────┤
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│ All  Pinned  Text  Links  Repos  Code  …      │
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├─ List ──────────────────┬─ Preview ───────────┤
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ ⌘1  📄  hello world     │ TEXT · 11 chars     │
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ ⌘2  🔗  github.com/…   │                     │
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│ ⌘3  🎨  #7c8cff        │ hello world         │
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│ ⌘4  📁  ~/Downloads/…  │                     │
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├─ Footer ──────────────────────────────────────┤
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│ ● clipboarder   ⌘1-9 ⌘K esc        24 items ⚙ │
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└───────────────────────────────────────────────┘
+<h1 id="server-mode">Server mode<a class="headerlink" href="#server-mode" title="Permanent link">&para;</a></h1>
+<p>clipboarder can run as a shared HTTP backend. Multiple clients connect with bearer tokens; each token is scoped to its own namespace, and namespaces are fully isolated — even the FTS index honors them.</p>
+<p>Run it on your laptop for cross-device sync, or on a small server for a team shared clipboard.</p>
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 1. Create your first token (binds it to a namespace; namespace is created on first use)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>clipboarder<span class="w"> </span>admin<span class="w"> </span>token<span class="w"> </span>create<span class="w"> </span>--namespace<span class="w"> </span>alice<span class="w"> </span>--label<span class="w"> </span><span class="s2">&quot;Alice&#39;s MacBook&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># → prints tk_XXXX… — copy it now, you&#39;ll set it on the client below</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 2. Start the server</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>clipboarder<span class="w"> </span>serve<span class="w"> </span>--bind<span class="w"> </span><span class="m">127</span>.0.0.1:7474
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># 3. Point a client at it</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CLIPBOARDER_SERVER</span><span class="o">=</span><span class="s1">&#39;http://127.0.0.1:7474&#39;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CLIPBOARDER_TOKEN</span><span class="o">=</span><span class="s1">&#39;tk_XXXX…&#39;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Once the transparent-remote-store client lands, every `cb` command will</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># automatically route through the server. Until then, use the REST API</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># directly (see below).</span>
 </span></code></pre></div>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>Default config path: <code>~/Library/Application Support/com.clipboarder.app/server.toml</code>. Override with <code>--config</code>.</p>
+<p>Generated by <code>admin token create</code>:</p>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">bind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:7474&quot;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">[[tokens]]</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;tk_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&quot;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">namespace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;alice&quot;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Alice&#39;s MacBook&quot;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">[[tokens]]</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;tk_YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY&quot;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">namespace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;bob&quot;</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Bob&#39;s iPad&quot;</span>
+</span></code></pre></div>
+<p>Tokens are stored in plaintext; the file is <code>chmod 600</code>. For LAN deployments this is fine; for anything internet-facing put it behind a reverse proxy with TLS.</p>
+<h2 id="rest-endpoints">REST endpoints<a class="headerlink" href="#rest-endpoints" title="Permanent link">&para;</a></h2>
+<p>All routes are under <code>/v1</code> and require <code>Authorization: Bearer tk_…</code>. The namespace is derived from the token — there's no namespace param in any URL.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Body</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/health</code></td>
+<td>—</td>
+<td><code>ok</code> (no auth required)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/whoami</code></td>
+<td>—</td>
+<td><code>{namespace, label}</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/items?q&amp;kind&amp;limit</code></td>
+<td>—</td>
+<td>array of items</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/items</code></td>
+<td><code>{content, kind?, meta?, source_app?}</code></td>
+<td><code>{id, inserted, kind}</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/items/{id}</code></td>
+<td>—</td>
+<td>item</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/v1/items/{id}</code></td>
+<td>—</td>
+<td>204</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/items/{id}/pin</code></td>
+<td>—</td>
+<td><code>{id, pinned: true}</code></td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/v1/items/{id}/pin</code></td>
+<td>—</td>
+<td><code>{id, pinned: false}</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/clear</code></td>
+<td>—</td>
+<td>204 (non-pinned only)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/stats</code></td>
+<td>—</td>
+<td><code>{total, pinned, by_kind, namespace}</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/watch</code></td>
+<td>—</td>
+<td>Server-Sent Events stream of new items</td>
+</tr>
+</tbody>
+</table>
+<h3 id="query-parameters">Query parameters<a class="headerlink" href="#query-parameters" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Search</strong> — type to filter; clear with <code>⌘K</code></li>
-<li><strong>Filter chips</strong> — narrow by content kind, plus <em>All</em> and <em>Pinned</em></li>
-<li><strong>List</strong> — most-recently-used at the top (pinned always above non-pinned)</li>
-<li><strong>Preview</strong> — rich, kind-aware: color swatch, image thumbnail, PDF embed, music/repo cards</li>
-<li><strong>Footer</strong> — keyboard hints, item count, and the Settings gear</li>
+<li><code>q</code> — FTS5 query (prefix-matched). Omit for "most recent".</li>
+<li><code>kind</code> — <code>text</code> / <code>url</code> / <code>repo</code> / <code>code</code> / <code>color</code> / <code>image</code> / <code>file</code> / <code>pdf</code> / <code>music</code> / <code>video</code> / <code>email</code> / <code>pinned</code> / <code>all</code> (default <code>all</code>).</li>
+<li><code>limit</code> — max items returned. Capped at 10,000.</li>
 </ul>
-<h2 id="read-these-next">Read these next<a class="headerlink" href="#read-these-next" title="Permanent link">&para;</a></h2>
+<h3 id="sse-v1watch">SSE — <code>/v1/watch</code><a class="headerlink" href="#sse-v1watch" title="Permanent link">&para;</a></h3>
+<p>Streams every new item captured under the caller's namespace, encoded as a JSON <code>data:</code> payload on an <code>event: item</code> line. Pings every 15 s as <code>event: ping</code> to keep proxies happy.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-N<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$CLIPBOARDER_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CLIPBOARDER_SERVER</span><span class="s2">/v1/watch&quot;</span>
+</span></code></pre></div>
+<h2 id="admin">Admin<a class="headerlink" href="#admin" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Create a token</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>clipboarder<span class="w"> </span>admin<span class="w"> </span>token<span class="w"> </span>create<span class="w"> </span>--namespace<span class="w"> </span>alice<span class="w"> </span>--label<span class="w"> </span><span class="s2">&quot;Alice&#39;s Mac&quot;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># List tokens (full values redacted to prefix)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>clipboarder<span class="w"> </span>admin<span class="w"> </span>token<span class="w"> </span>list
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>clipboarder<span class="w"> </span>admin<span class="w"> </span>token<span class="w"> </span>list<span class="w"> </span>--json
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Revoke (matches full token or unique prefix)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>clipboarder<span class="w"> </span>admin<span class="w"> </span>token<span class="w"> </span>revoke<span class="w"> </span>tk_XYZ
+</span></code></pre></div>
+<p>Revocation rewrites <code>server.toml</code>. <strong>The running server caches the config in memory</strong> — restart <code>clipboarder serve</code> for revocations to take effect. (A <code>/v1/admin/reload</code> endpoint is on the roadmap.)</p>
+<h2 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h2>
+<p>The server doesn't terminate TLS itself. Run it bound to <code>127.0.0.1</code> and front it with one of:</p>
+<h3 id="caddy">Caddy<a class="headerlink" href="#caddy" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>clipboarder.example.com {
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  reverse_proxy 127.0.0.1:7474
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>}
+</span></code></pre></div>
+<p>That's it — Caddy handles Let's Encrypt automatically.</p>
+<h3 id="nginx">Nginx<a class="headerlink" href="#nginx" title="Permanent link">&para;</a></h3>
+<div class="language-nginx highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="kn">listen</span><span class="w"> </span><span class="mi">443</span><span class="w"> </span><span class="s">ssl</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="kn">server_name</span><span class="w"> </span><span class="s">clipboarder.example.com</span><span class="p">;</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="c1"># SSL config…</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://127.0.0.1:7474</span><span class="p">;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="kn">proxy_http_version</span><span class="w"> </span><span class="mi">1</span><span class="s">.1</span><span class="p">;</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="c1"># For /v1/watch SSE</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Connection</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">;</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="kn">proxy_buffering</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="kn">proxy_read_timeout</span><span class="w"> </span><span class="s">86400s</span><span class="p">;</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="systemd-unit-linux">systemd unit (Linux)<a class="headerlink" href="#systemd-unit-linux" title="Permanent link">&para;</a></h3>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[Unit]</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="na">Description</span><span class="o">=</span><span class="s">clipboarder server</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="na">After</span><span class="o">=</span><span class="s">network.target</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">[Service]</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="na">ExecStart</span><span class="o">=</span><span class="s">/usr/local/bin/clipboarder serve --bind 127.0.0.1:7474</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="na">Restart</span><span class="o">=</span><span class="s">always</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="na">RestartSec</span><span class="o">=</span><span class="s">5</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="na">User</span><span class="o">=</span><span class="s">clipboarder</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="k">[Install]</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</span></code></pre></div>
+<h3 id="launchd-macos">launchd (macOS)<a class="headerlink" href="#launchd-macos" title="Permanent link">&para;</a></h3>
+<div class="language-xml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">&lt;plist</span><span class="w"> </span><span class="na">version=</span><span class="s">&quot;1.0&quot;</span><span class="nt">&gt;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">&lt;dict&gt;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&lt;key&gt;</span>Label<span class="nt">&lt;/key&gt;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&lt;string&gt;</span>com.clipboarder.server<span class="nt">&lt;/string&gt;</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">&lt;key&gt;</span>ProgramArguments<span class="nt">&lt;/key&gt;</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">&lt;array&gt;</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="nt">&lt;string&gt;</span>/usr/local/bin/clipboarder<span class="nt">&lt;/string&gt;</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="nt">&lt;string&gt;</span>serve<span class="nt">&lt;/string&gt;</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nt">&lt;string&gt;</span>--bind<span class="nt">&lt;/string&gt;</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="nt">&lt;string&gt;</span>127.0.0.1:7474<span class="nt">&lt;/string&gt;</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span><span class="nt">&lt;/array&gt;</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span><span class="nt">&lt;key&gt;</span>RunAtLoad<span class="nt">&lt;/key&gt;</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span><span class="nt">&lt;true/&gt;</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="nt">&lt;key&gt;</span>KeepAlive<span class="nt">&lt;/key&gt;</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">  </span><span class="nt">&lt;true/&gt;</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="nt">&lt;/dict&gt;</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="nt">&lt;/plist&gt;</span>
+</span></code></pre></div>
+<p>Save to <code>~/Library/LaunchAgents/com.clipboarder.server.plist</code> and run <code>launchctl load …</code>.</p>
+<h2 id="namespace-isolation">Namespace isolation<a class="headerlink" href="#namespace-isolation" title="Permanent link">&para;</a></h2>
+<p>Items, FTS index, pin state, stats — everything is scoped by namespace. The same content copied from two clients in different namespaces produces two distinct rows. The unique index on <code>(namespace, content_hash)</code> enforces this at the schema level.</p>
+<p>Verified by <a href="https://github.com/shakedaskayo/clipboarder/blob/main/scripts/test-server.sh"><code>scripts/test-server.sh</code></a> — 27 assertions in CI:</p>
 <ul>
-<li><a href="search/">Search &amp; filters</a> — how the indexer works and what tokens it accepts</li>
-<li><a href="shortcuts/">Keyboard shortcuts</a> — the full list</li>
-<li><a href="content-types/">Content types</a> — every kind clipboarder recognizes and the previews you'll see</li>
-<li><a href="pinning/">Pinning &amp; history</a> — how items stay around (or get cleaned up)</li>
+<li>alice + bob both post → alice sees 2 items, bob sees 1</li>
+<li>alice searches "anthropic" → 1 hit</li>
+<li>bob searches "anthropic" → 0 hits (even though the bytes exist, they're in alice's namespace)</li>
+<li>alice DELETE <code>/v1/items/{bob_id}</code> → 404</li>
+<li>alice POST <code>/v1/clear</code> → bob's items untouched</li>
+</ul>
+<h2 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Transparent client backend swap (CLI subcommands route via HTTP when env vars set)</li>
+<li>Live config reload on <code>admin token revoke</code></li>
+<li>Argon2-hashed tokens at rest</li>
+<li>Multi-token-per-namespace with last-used-at + revoke-by-fingerprint</li>
+<li>Web UI for token + namespace management</li>
 </ul>
 
 
@@ -1964,7 +2413,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../getting-started/quickstart/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Quickstart">
+          <a href="../agents/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Integration">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1974,20 +2423,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Quickstart
+                Integration
               </div>
             </div>
           </a>
         
         
           
-          <a href="search/" class="md-footer__link md-footer__link--next" aria-label="Next: Search &amp; filters">
+          <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Search & filters
+                Overview
               </div>
             </div>
             <div class="md-footer__button md-icon">
