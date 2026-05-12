@@ -56,16 +56,15 @@ open src-tauri/target/release/bundle/dmg/
 
 See [Contributing](../contributing/index.md) for the full development setup.
 
-## First launch
+## First launch — guided permission grant
 
-On first launch macOS will request **Accessibility permission**. This is needed so clipboarder can synthesize `⌘V` into the previously-focused app after you select an item.
+On first launch clipboarder shows an in-app banner asking for **Accessibility permission**. This is what lets it synthesize `⌘V` into your previously-focused app after you pick an item:
 
-To grant:
+1. Click **Open Settings** in the banner → macOS jumps straight to the right pane
+2. Toggle `clipboarder` on
+3. Switch back to clipboarder — the banner auto-detects within ~2 seconds and turns green
 
-1. Open **System Settings** → **Privacy & Security** → **Accessibility**
-2. Toggle `clipboarder` on (or click `+` and add it from `/Applications`)
-
-Until you grant it, *Copy to clipboard* still works — but paste-back won't fire automatically and you'll have to press `⌘V` yourself.
+You only do this once. Without it, *Copy to clipboard* still works, but the auto-paste step won't fire (you'd have to press `⌘V` yourself).
 
 ## Uninstall
 

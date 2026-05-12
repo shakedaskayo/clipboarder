@@ -70,3 +70,11 @@ export async function fetchUrlMetadata(
     refresh: options?.refresh ?? false,
   });
 }
+
+export async function accessibilityTrusted(): Promise<boolean> {
+  return await invoke<boolean>("accessibility_trusted");
+}
+
+export async function openAccessibilitySettings(): Promise<void> {
+  await invoke("open_accessibility_settings");
+}

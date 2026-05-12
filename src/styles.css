@@ -949,6 +949,78 @@ mark {
   padding: 0 1px;
 }
 
+/* ============================================================
+   PERMISSION BANNER
+   ============================================================ */
+
+.perm-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 14px 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(255, 165, 70, 0.10), rgba(255, 165, 70, 0.06));
+  border: 1px solid rgba(255, 165, 70, 0.25);
+  position: relative;
+  z-index: 1;
+}
+
+.perm-banner.perm-success {
+  background: linear-gradient(135deg, rgba(120, 220, 140, 0.10), rgba(120, 220, 140, 0.06));
+  border-color: rgba(120, 220, 140, 0.30);
+}
+
+.perm-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: rgba(255, 165, 70, 0.18);
+  color: #ffb070;
+  flex-shrink: 0;
+}
+.perm-success .perm-icon {
+  background: rgba(120, 220, 140, 0.18);
+  color: #8eebbe;
+}
+.perm-icon svg { width: 15px; height: 15px; }
+
+.perm-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.perm-body strong {
+  font-weight: 600;
+}
+.perm-body span {
+  color: var(--text-soft);
+}
+
+.perm-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perm-actions .btn {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11.5px;
+}
+
+.perm-close {
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+}
+.perm-close svg { width: 11px; height: 11px; }
+
 /* Footer settings button */
 .footer-btn {
   display: inline-flex;

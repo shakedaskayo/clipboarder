@@ -159,6 +159,30 @@ pub fn open_url(app: AppHandle, url: String) -> CmdResult<()> {
 }
 
 #[tauri::command]
+pub fn accessibility_trusted() -> CmdResult<bool> {
+    #[cfg(target_os = "macos")]
+    {
+        Ok(crate::macos::is_accessibility_trusted())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(true)
+    }
+}
+
+#[tauri::command]
+pub fn open_accessibility_settings(app: AppHandle) -> CmdResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+                .to_string(),
+            None::<String>,
+        )
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
 pub async fn fetch_url_metadata(
     state: State<'_, AppState>,
     url: String,

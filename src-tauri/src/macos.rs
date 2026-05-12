@@ -16,6 +16,18 @@ use cocoa::foundation::{NSSize, NSString};
 use objc::{class, msg_send, sel, sel_impl};
 use tauri::WebviewWindow;
 
+#[link(name = "ApplicationServices", kind = "framework")]
+extern "C" {
+    fn AXIsProcessTrusted() -> u8;
+}
+
+/// Check whether clipboarder has been granted macOS Accessibility permission.
+/// Required so we can synthesize ⌘V into the previously-focused app after
+/// the user picks an item.
+pub fn is_accessibility_trusted() -> bool {
+    unsafe { AXIsProcessTrusted() != 0 }
+}
+
 pub fn configure_window(win: &WebviewWindow) {
     let Ok(ptr) = win.ns_window() else { return; };
     if ptr.is_null() { return; }

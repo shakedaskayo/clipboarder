@@ -167,11 +167,21 @@ ok "Installed clipboarder ${TAG} → ${DEST}"
 if [ "$AUTO_LAUNCH" = "1" ]; then
   log "Launching clipboarder…"
   open -a "$DEST"
-  echo
-  echo "${CLR_BOLD}Next steps:${CLR_RESET}"
-  echo "  • Press ${CLR_BOLD}⌘⇧V${CLR_RESET} from anywhere to summon clipboarder."
-  echo "  • Grant ${CLR_BOLD}Accessibility${CLR_RESET} permission when prompted to enable paste-back."
-  echo "  • Open Settings (⌘,) to customize the hotkey, history limits, and privacy exclusions."
-  echo
-  echo "Docs: https://shakedaskayo.github.io/clipboarder"
+  cat <<EOF
+
+${CLR_BOLD}Next steps:${CLR_RESET}
+
+  1. The window that just opened has a ${CLR_BOLD}banner at the top${CLR_RESET}
+     asking for Accessibility permission. Click "Open Settings".
+  2. macOS jumps to ${CLR_BOLD}Privacy & Security → Accessibility${CLR_RESET}.
+     Toggle ${CLR_BOLD}clipboarder${CLR_RESET} on.
+  3. Switch back to clipboarder — the banner auto-detects the change
+     and turns green. You're set.
+
+  • ${CLR_BOLD}⌘⇧V${CLR_RESET} from anywhere   summon the overlay
+  • ${CLR_BOLD}⌘,${CLR_RESET}                   open Settings (rebind the hotkey,
+                          launch at login, privacy exclusions)
+
+Docs: https://shakedaskayo.github.io/clipboarder
+EOF
 fi

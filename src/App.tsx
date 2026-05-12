@@ -8,6 +8,7 @@ import { Row } from "./components/Row";
 import { Preview } from "./components/Preview";
 import { Chips, type Filter } from "./components/Chips";
 import { SettingsPanel } from "./components/Settings";
+import { PermissionBanner } from "./components/PermissionBanner";
 
 const PAGE_SIZE = 200;
 
@@ -165,6 +166,8 @@ export default function App() {
               <span>paste</span>
             </div>
           </div>
+
+          <PermissionBanner />
 
           <Chips filter={filter} counts={counts} onChange={setFilter} />
 

@@ -92,6 +92,20 @@ export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export const ShieldIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+);
+
+export const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}><polyline points="20 6 9 17 4 12"/></svg>
+);
+
+export const CloseIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+);
+
 export const RepoIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...p}>
     <path d="M9 19c-4 1.5-4-2-6-2.5"/>

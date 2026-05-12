@@ -160,6 +160,8 @@ pub fn run() {
             commands::open_url,
             commands::initial_view,
             commands::initial_filter,
+            commands::accessibility_trusted,
+            commands::open_accessibility_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running clipboarder");
