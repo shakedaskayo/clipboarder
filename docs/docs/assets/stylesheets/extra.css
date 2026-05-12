@@ -1,14 +1,32 @@
 :root {
-  --md-primary-fg-color:        #7c8cff;
-  --md-primary-fg-color--light: #97a6ff;
-  --md-primary-fg-color--dark:  #5b6bd9;
-  --md-accent-fg-color:         #7c8cff;
+  /* Tangerine — warm, friendly, anti-corporate. */
+  --md-primary-fg-color:        #FF7847;
+  --md-primary-fg-color--light: #FFB084;
+  --md-primary-fg-color--dark:  #E55A28;
+  --md-accent-fg-color:         #FFB084;
+  --md-accent-fg-color--transparent: rgba(255, 176, 132, 0.10);
+
+  /* Links pick up the primary by default; we want the brighter hover. */
+  --md-typeset-a-color: #FF7847;
 }
 
 [data-md-color-scheme="slate"] {
   --md-default-bg-color: #15151a;
   --md-default-bg-color--light: #1c1c22;
   --md-default-bg-color--dark: #0f0f14;
+
+  /* Links pop a little brighter on the dark scheme. */
+  --md-typeset-a-color: #FF9466;
+}
+
+/* Material renders the top header bar using the primary color directly,
+   which on a pure tangerine looks too candy. Tone it down for the bar only. */
+.md-header {
+  background: linear-gradient(135deg, #FF7847 0%, #FF9466 100%);
+}
+
+.md-tabs {
+  background: linear-gradient(135deg, #E55A28 0%, #FF7847 100%);
 }
 
 .md-typeset .clipboarder-hero {
@@ -29,7 +47,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, #7c8cff 0%, #b794f4 100%);
+  background: linear-gradient(135deg, #FF6B47 0%, #FFB084 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -50,8 +68,8 @@
 }
 
 .md-typeset .install-cmd pre {
-  background: linear-gradient(135deg, rgba(124, 140, 255, 0.08), rgba(183, 148, 244, 0.06));
-  border: 1px solid rgba(124, 140, 255, 0.25);
+  background: linear-gradient(135deg, rgba(255, 120, 71, 0.10), rgba(255, 176, 132, 0.06));
+  border: 1px solid rgba(255, 120, 71, 0.30);
 }
 
 .feature-grid {
@@ -66,6 +84,11 @@
   border-radius: 10px;
   background: var(--md-default-bg-color--light);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: border-color 140ms, transform 140ms;
+}
+.feature-card:hover {
+  border-color: rgba(255, 120, 71, 0.40);
+  transform: translateY(-1px);
 }
 
 .feature-card h3 {
@@ -125,6 +148,43 @@
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   margin: 0.5rem 0 1rem;
+}
+
+/* Button + tab accents pick up the new primary nicely. */
+.md-typeset .md-button {
+  border-color: var(--md-primary-fg-color);
+  color: var(--md-primary-fg-color);
+}
+.md-typeset .md-button--primary {
+  background: linear-gradient(135deg, #FF7847 0%, #FF9466 100%);
+  border-color: transparent;
+  color: #fff;
+}
+.md-typeset .md-button--primary:hover {
+  background: linear-gradient(135deg, #FF6B47 0%, #FF7E5C 100%);
+}
+.md-typeset .md-button:not(.md-button--primary):hover {
+  background: var(--md-accent-fg-color--transparent);
+  color: var(--md-primary-fg-color);
+  border-color: var(--md-primary-fg-color);
+}
+
+/* Inline code spans look better with a warm tint. */
+.md-typeset code:not(pre code) {
+  color: #FFB084;
+  background: rgba(255, 120, 71, 0.10);
+  border: 1px solid rgba(255, 120, 71, 0.18);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+/* Tabbed-content headers / accents */
+.md-typeset .tabbed-labels > label {
+  color: var(--md-default-fg-color--light);
+}
+.md-typeset .tabbed-labels > input:checked + label {
+  color: var(--md-primary-fg-color);
+  border-color: var(--md-primary-fg-color);
 }
 
 /* Tabbed content (used for the kind gallery) should not break out of the
