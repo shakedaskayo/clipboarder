@@ -1734,6 +1734,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#watch-cli-long-poll" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch (CLI long-poll)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#roadmap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2129,6 +2140,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#watch-cli-long-poll" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch (CLI long-poll)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#roadmap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2370,9 +2392,13 @@
 <li>alice DELETE <code>/v1/items/{bob_id}</code> → 404</li>
 <li>alice POST <code>/v1/clear</code> → bob's items untouched</li>
 </ul>
+<h2 id="watch-cli-long-poll">Watch (CLI long-poll)<a class="headerlink" href="#watch-cli-long-poll" title="Permanent link">&para;</a></h2>
+<p><code>cb watch</code> polls the backend every 1.5 s when remote-mode is active and prints new items as JSON Lines. For agents that need true real-time, use the SSE endpoint directly:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>curl<span class="w"> </span>-N<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$CLIPBOARDER_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CLIPBOARDER_SERVER</span><span class="s2">/v1/watch&quot;</span>
+</span></code></pre></div>
 <h2 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Transparent client backend swap (CLI subcommands route via HTTP when env vars set)</li>
+<li>True SSE consumption in <code>cb watch</code> (currently long-polls)</li>
 <li>Live config reload on <code>admin token revoke</code></li>
 <li>Argon2-hashed tokens at rest</li>
 <li>Multi-token-per-namespace with last-used-at + revoke-by-fingerprint</li>
