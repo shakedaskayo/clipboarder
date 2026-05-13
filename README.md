@@ -269,9 +269,9 @@ watch                 stream new items as JSON Lines
 
 Every command supports `--json` for machine-readable output. Full reference: <https://shakedaskayo.github.io/clipboarder/cli-reference/>.
 
-### Shared server mode
+### Shared server mode — multi-namespace HTTP backend
 
-clipboarder can run as a multi-namespace HTTP backend. Multiple clients connect with bearer tokens; each is scoped to its own namespace — content, FTS index, pins, and stats are fully isolated.
+clipboarder can run as a shared backend. Multiple clients connect with bearer tokens; each is scoped to its own namespace — content, FTS index, pins, and stats are fully isolated.
 
 ```bash
 # Server side
@@ -279,15 +279,23 @@ clipboarder admin token create --namespace alice --label "Alice's MacBook"
 # → tk_…  (paste this on the client)
 clipboarder serve --bind 0.0.0.0:7474
 
-# Client side (any machine)
+# Client side — every `cb` subcommand transparently hits the server when
+# CLIPBOARDER_SERVER + CLIPBOARDER_TOKEN are set.
 export CLIPBOARDER_SERVER='http://your-server:7474'
 export CLIPBOARDER_TOKEN='tk_…'
-curl -s -H "Authorization: Bearer $CLIPBOARDER_TOKEN" "$CLIPBOARDER_SERVER/v1/items?limit=5"
+
+cb list                              # ← list against alice's namespace
+cb search "react" --kind repo
+echo "save this" | cb cp --source claude
+cb p --grep "auth"
+cb stats
 ```
+
+Or use `~/.config/clipboarder/client.toml` (env overrides file). Same JSON shapes, same UX, namespace inferred from token. **34 integration tests** in CI cover end-to-end namespace isolation across both the raw REST API and the transparent client.
 
 REST endpoints: `/v1/health`, `/v1/whoami`, `/v1/items`, `/v1/items/:id`, `/v1/items/:id/pin`, `/v1/clear`, `/v1/stats`, `/v1/watch` (SSE).
 
-Full deployment guide (Caddy / Nginx / systemd / launchd) at [docs / Server mode](https://shakedaskayo.github.io/clipboarder/server/). [27 integration tests](scripts/test-server.sh) gate the namespace isolation in CI.
+Full deployment guide (Caddy / Nginx / systemd / launchd) at [docs / Server mode](https://shakedaskayo.github.io/clipboarder/server/).
 
 ### For AI agents — drop-in Claude Code skill
 

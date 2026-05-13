@@ -9,6 +9,7 @@ pub mod server;
 pub mod server_config;
 mod settings;
 pub mod storage;
+pub mod store;
 mod url_meta;
 
 #[cfg(target_os = "macos")]

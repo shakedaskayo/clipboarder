@@ -23,6 +23,7 @@ use serde::Serialize;
 use crate::classify;
 use crate::secrets;
 use crate::storage::{ClipItem, NewItem, Storage, DEFAULT_NAMESPACE};
+use crate::store::{open_store, ItemStore, StoreBackend, UpsertRequest};
 
 /// Command vocabulary the dual-mode dispatch in main.rs recognizes. Listed
 /// here so the CLI and the dispatch logic stay in sync.
@@ -325,41 +326,51 @@ pub enum TokenAction {
 /// Entry point invoked from main.rs when argv looks like CLI mode.
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
-    let data_dir = data_dir();
-    std::fs::create_dir_all(&data_dir).ok();
-    let db_path = data_dir.join("clipboarder.sqlite");
-    let mut storage = Storage::open(&db_path).context("open clipboarder database")?;
-    let ns = std::env::var("CLIPBOARDER_NAMESPACE").unwrap_or_else(|_| DEFAULT_NAMESPACE.into());
 
+    // Commands that don't go through ItemStore (server / admin / local-only):
+    match cli.command {
+        Command::Serve { bind, config } => return cmd_serve(bind, config),
+        Command::Admin { action } => return cmd_admin(action),
+        Command::TestPaste { marker, delay_ms } => return cmd_test_paste(&marker, delay_ms),
+        _ => {}
+    }
+
+    // For everything else the CLI gets a backend (local SQLite by default,
+    // remote HTTP when CLIPBOARDER_SERVER + CLIPBOARDER_TOKEN are set).
+    let data_dir = data_dir();
+    let store = open_store(data_dir).context("open store")?;
+
+    // Re-extract the command (we consumed `cli.command` via the first match).
+    // Cheapest way: parse again. clap is fast.
+    let cli = Cli::parse();
     match cli.command {
         Command::List { limit, kind, json, agent } => {
-            cmd_list(&storage, limit, kind, json, &agent, &ns)
+            cmd_list(&*store, limit, kind, json, &agent)
         }
         Command::Search { query, limit, kind, json, agent } => {
-            cmd_search(&storage, &query, limit, kind, json, &agent, &ns)
+            cmd_search(&*store, &query, limit, kind, json, &agent)
         }
-        Command::Show { id, json } => cmd_show(&storage, id, json, &ns),
+        Command::Show { id, json } => cmd_show(&*store, id, json),
         Command::Add { text, kind, copy, source, json } => {
-            cmd_add(&mut storage, text, kind, copy, source, json, &ns)
+            cmd_add(&*store, text, kind, copy, source, json)
         }
-        Command::Pin { id } => cmd_set_pin(&mut storage, id, true, &ns),
-        Command::Unpin { id } => cmd_set_pin(&mut storage, id, false, &ns),
-        Command::Delete { id } => cmd_delete(&mut storage, id, &ns),
-        Command::Clear { yes } => cmd_clear(&mut storage, yes, &ns),
-        Command::Copy { id } => cmd_copy(&storage, id, &ns),
-        Command::Stats { json } => cmd_stats(&storage, json, &ns),
-        Command::Watch { kind } => cmd_watch(&storage, kind, &ns),
+        Command::Pin { id } => cmd_set_pin(&*store, id, true),
+        Command::Unpin { id } => cmd_set_pin(&*store, id, false),
+        Command::Delete { id } => cmd_delete(&*store, id),
+        Command::Clear { yes } => cmd_clear(&*store, yes),
+        Command::Copy { id } => cmd_copy(&*store, id),
+        Command::Stats { json } => cmd_stats(&*store, json),
+        Command::Watch { kind } => cmd_watch(&*store, kind),
         Command::Cp { kind, source, no_clipboard, json } => {
-            cmd_add(&mut storage, None, kind, !no_clipboard, Some(source), json, &ns)
+            cmd_add(&*store, None, kind, !no_clipboard, Some(source), json)
         }
         Command::P { n, kind, grep, copy, all, json, agent } => {
-            cmd_paste(&storage, n, kind, grep, copy, all, json, &agent, &ns)
+            cmd_paste(&*store, n, kind, grep, copy, all, json, &agent)
         }
-        Command::Pop { kind } => cmd_pop(&mut storage, kind, &ns),
-        Command::Doctor => cmd_doctor(&storage, &ns),
-        Command::TestPaste { marker, delay_ms } => cmd_test_paste(&marker, delay_ms),
-        Command::Serve { bind, config } => cmd_serve(bind, config),
-        Command::Admin { action } => cmd_admin(action),
+        Command::Pop { kind } => cmd_pop(&*store, kind),
+        Command::Doctor => cmd_doctor(&*store),
+        // The four above are already handled in the first match — unreachable here.
+        Command::Serve { .. } | Command::Admin { .. } | Command::TestPaste { .. } => unreachable!(),
     }
 }
 
@@ -580,7 +591,7 @@ fn cmd_test_paste(marker: &str, delay_ms: u64) -> Result<()> {
     Ok(())
 }
 
-fn cmd_doctor(storage: &Storage, ns: &str) -> Result<()> {
+fn cmd_doctor(store: &dyn ItemStore) -> Result<()> {
     let ok = "\x1b[32m✓\x1b[0m";
     let warn = "\x1b[33m⚠\x1b[0m";
     let bad = "\x1b[31m✗\x1b[0m";
@@ -588,17 +599,22 @@ fn cmd_doctor(storage: &Storage, ns: &str) -> Result<()> {
     println!("clipboarder doctor");
     println!("==================\n");
 
-    // 1) Data dir / DB
-    let dir = data_dir();
-    if dir.exists() {
-        println!("{ok} data dir       {}", dir.display());
-    } else {
-        println!("{bad} data dir       {} (missing — has the GUI ever launched?)", dir.display());
+    // 0) Backend
+    println!("{ok} backend        {}", store.describe());
+
+    // 1) Data dir / DB (only meaningful for local)
+    if store.backend() == StoreBackend::Local {
+        let dir = data_dir();
+        if dir.exists() {
+            println!("{ok} data dir       {}", dir.display());
+        } else {
+            println!("{bad} data dir       {} (missing — has the GUI ever launched?)", dir.display());
+        }
     }
 
-    // 2) Item count via the existing storage handle (in the active namespace)
-    let total = storage.search("", "all", 1_000_000, ns).map(|v| v.len()).unwrap_or(0);
-    println!("{ok} history items  {total} (namespace: {ns})");
+    // 2) Item count via the trait — works for both backends
+    let total = store.search("", "all", 1_000_000).map(|v| v.len()).unwrap_or(0);
+    println!("{ok} history items  {total} (namespace: {})", store.namespace());
 
     // 3) GUI process running?
     let running = process_running("clipboarder");
@@ -658,36 +674,34 @@ fn normalize_kind(k: Option<String>) -> String {
 // ── list & search ────────────────────────────────────────────────────────────
 
 fn cmd_list(
-    storage: &Storage,
+    store: &dyn ItemStore,
     limit: i64,
     kind: Option<String>,
     json: bool,
     agent: &AgentOpts,
-    ns: &str,
 ) -> Result<()> {
-    let items = storage.search("", &normalize_kind(kind), limit, ns)?;
+    let items = store.search("", &normalize_kind(kind), limit)?;
     let items = apply_agent_opts(&items, None, agent);
     emit_items(&items, json, agent.compact);
     Ok(())
 }
 
 fn cmd_search(
-    storage: &Storage,
+    store: &dyn ItemStore,
     query: &str,
     limit: i64,
     kind: Option<String>,
     json: bool,
     agent: &AgentOpts,
-    ns: &str,
 ) -> Result<()> {
-    let items = storage.search(query, &normalize_kind(kind), limit, ns)?;
+    let items = store.search(query, &normalize_kind(kind), limit)?;
     let items = apply_agent_opts(&items, Some(query), agent);
     emit_items(&items, json, agent.compact);
     Ok(())
 }
 
-fn cmd_show(storage: &Storage, id: i64, json: bool, ns: &str) -> Result<()> {
-    let Some(item) = storage.get(id, ns)? else {
+fn cmd_show(store: &dyn ItemStore, id: i64, json: bool) -> Result<()> {
+    let Some(item) = store.get(id)? else {
         eprintln!("item #{id} not found");
         std::process::exit(1);
     };
@@ -703,13 +717,12 @@ fn cmd_show(storage: &Storage, id: i64, json: bool, ns: &str) -> Result<()> {
 // ── add ──────────────────────────────────────────────────────────────────────
 
 fn cmd_add(
-    storage: &mut Storage,
+    store: &dyn ItemStore,
     text: Option<String>,
     kind_override: Option<String>,
     also_copy: bool,
     source: Option<String>,
     json: bool,
-    ns: &str,
 ) -> Result<()> {
     let body = match text {
         Some(t) => t,
@@ -724,25 +737,12 @@ fn cmd_add(
         std::process::exit(2);
     }
 
-    let classified = classify::classify_text(&body);
-    let kind = match kind_override {
-        Some(k) => classify::Kind::from_str(&k),
-        None => classified.kind,
-    };
-    let meta = classified.meta;
-    let hash = sha256_hex(body.as_bytes());
-
-    let (id, inserted) = storage.upsert(&NewItem {
-        kind,
-        content: &body,
-        preview: &classified.preview,
-        meta: meta.as_deref(),
-        source_app: source.as_deref(),
-        source_app_id: None,
-        image_path: None,
-        content_hash: &hash,
-        size: body.len() as i64,
-    }, ns)?;
+    let reply = store.upsert(&UpsertRequest {
+        content: body.clone(),
+        kind: kind_override,
+        meta: None,
+        source_app: source,
+    })?;
 
     if also_copy {
         write_clipboard_text(&body).context("set system clipboard")?;
@@ -751,7 +751,7 @@ fn cmd_add(
     if json {
         println!(
             "{}",
-            serde_json::json!({"id": id, "inserted": inserted, "kind": kind.as_str()})
+            serde_json::json!({"id": reply.id, "inserted": reply.inserted, "kind": reply.kind})
         );
     }
     Ok(())
@@ -759,30 +759,26 @@ fn cmd_add(
 
 // ── pin / unpin / delete / clear ────────────────────────────────────────────
 
-fn cmd_set_pin(storage: &mut Storage, id: i64, want_pinned: bool, ns: &str) -> Result<()> {
-    let cur = storage.get(id, ns)?;
-    let Some(cur) = cur else {
-        eprintln!("item #{id} not found");
-        std::process::exit(1);
-    };
-    if cur.pinned == want_pinned {
-        return Ok(());
+fn cmd_set_pin(store: &dyn ItemStore, id: i64, want_pinned: bool) -> Result<()> {
+    match store.set_pin(id, want_pinned) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(1);
+        }
     }
-    storage.toggle_pin(id, ns)?;
-    Ok(())
 }
 
-fn cmd_delete(storage: &mut Storage, id: i64, ns: &str) -> Result<()> {
-    if storage.get(id, ns)?.is_none() {
+fn cmd_delete(store: &dyn ItemStore, id: i64) -> Result<()> {
+    if store.get(id)?.is_none() {
         eprintln!("item #{id} not found");
         std::process::exit(1);
     }
-    let img = storage.delete(id, ns)?;
-    if let Some(p) = img { let _ = std::fs::remove_file(p); }
+    store.delete(id)?;
     Ok(())
 }
 
-fn cmd_clear(storage: &mut Storage, yes: bool, ns: &str) -> Result<()> {
+fn cmd_clear(store: &dyn ItemStore, yes: bool) -> Result<()> {
     if !yes {
         eprint!("Clear all non-pinned items? [y/N] ");
         std::io::stderr().flush().ok();
@@ -793,23 +789,27 @@ fn cmd_clear(storage: &mut Storage, yes: bool, ns: &str) -> Result<()> {
             std::process::exit(2);
         }
     }
-    let images = storage.clear(ns)?;
-    for p in images { let _ = std::fs::remove_file(p); }
+    store.clear()?;
     Ok(())
 }
 
 // ── copy ─────────────────────────────────────────────────────────────────────
 
-fn cmd_copy(storage: &Storage, id: i64, ns: &str) -> Result<()> {
-    let Some(item) = storage.get(id, ns)? else {
+fn cmd_copy(store: &dyn ItemStore, id: i64) -> Result<()> {
+    let Some(item) = store.get(id)? else {
         eprintln!("item #{id} not found");
         std::process::exit(1);
     };
     if item.kind == "image" {
         if let Some(path) = &item.image_path {
-            let bytes = std::fs::read(path)?;
-            write_clipboard_image(&bytes)?;
-            return Ok(());
+            // Image bytes live on the *server's* disk; for remote stores the
+            // path won't resolve locally. Fall back to text content for the
+            // remote case until we add /v1/items/:id/image.
+            if std::path::Path::new(path).exists() {
+                let bytes = std::fs::read(path)?;
+                write_clipboard_image(&bytes)?;
+                return Ok(());
+            }
         }
     }
     write_clipboard_text(&item.content)?;
@@ -827,35 +827,18 @@ struct Stats {
     db_size_bytes: u64,
 }
 
-fn cmd_stats(storage: &Storage, json: bool, ns: &str) -> Result<()> {
-    let all = storage.search("", "all", 1_000_000, ns)?;
-    let total = all.len() as i64;
-    let pinned = all.iter().filter(|i| i.pinned).count() as i64;
-    let mut by_kind = std::collections::BTreeMap::new();
-    for it in &all {
-        *by_kind.entry(it.kind.clone()).or_insert(0) += 1;
-    }
-    let db_path = data_dir().join("clipboarder.sqlite");
-    let db_size = std::fs::metadata(&db_path).map(|m| m.len()).unwrap_or(0);
-    let stats = Stats {
-        total,
-        pinned,
-        by_kind,
-        db_path: db_path.to_string_lossy().into_owned(),
-        db_size_bytes: db_size,
-    };
-
+fn cmd_stats(store: &dyn ItemStore, json: bool) -> Result<()> {
+    let stats = store.stats()?;
     if json {
         println!("{}", serde_json::to_string_pretty(&stats)?);
     } else {
-        println!("items:    {}", stats.total);
-        println!("pinned:   {}", stats.pinned);
+        println!("backend:   {}", store.describe());
+        println!("items:     {}", stats.total);
+        println!("pinned:    {}", stats.pinned);
         println!("by kind:");
         for (k, v) in &stats.by_kind {
             println!("  {:8}  {}", k, v);
         }
-        println!("db:       {}", stats.db_path);
-        println!("db size:  {} bytes", stats.db_size_bytes);
     }
     Ok(())
 }
@@ -863,7 +846,7 @@ fn cmd_stats(storage: &Storage, json: bool, ns: &str) -> Result<()> {
 // ── paste / pop ──────────────────────────────────────────────────────────────
 
 fn cmd_paste(
-    storage: &Storage,
+    store: &dyn ItemStore,
     n: usize,
     kind: Option<String>,
     grep: Option<String>,
@@ -871,7 +854,6 @@ fn cmd_paste(
     all: bool,
     json: bool,
     agent: &AgentOpts,
-    ns: &str,
 ) -> Result<()> {
     if n == 0 {
         eprintln!("position N must be >= 1");
@@ -880,7 +862,7 @@ fn cmd_paste(
     let query = grep.clone().unwrap_or_default();
     let kind_str = normalize_kind(kind);
     let limit = if all { 10_000 } else { n as i64 };
-    let raw = storage.search(&query, &kind_str, limit, ns)?;
+    let raw = store.search(&query, &kind_str, limit)?;
     let items = apply_agent_opts(&raw, grep.as_deref(), agent);
 
     if items.is_empty() {
@@ -900,13 +882,17 @@ fn cmd_paste(
         };
         emit_one(item, json, agent.compact);
         if also_copy {
-            // Use the ORIGINAL content (pre-truncation, pre-redaction) so the
-            // pasteboard actually gets the real thing.
+            // Pre-truncation original content so the pasteboard gets the full thing.
             let original = &raw[idx];
             if original.kind == "image" {
                 if let Some(path) = &original.image_path {
-                    let bytes = std::fs::read(path)?;
-                    write_clipboard_image(&bytes)?;
+                    if std::path::Path::new(path).exists() {
+                        let bytes = std::fs::read(path)?;
+                        write_clipboard_image(&bytes)?;
+                    } else {
+                        // Remote store — image path is on the server, not us.
+                        write_clipboard_text(&original.content)?;
+                    }
                 }
             } else {
                 write_clipboard_text(&original.content)?;
@@ -945,31 +931,34 @@ fn emit_one(item: &ClipItem, json: bool, compact: bool) {
     }
 }
 
-fn cmd_pop(storage: &mut Storage, kind: Option<String>, ns: &str) -> Result<()> {
+fn cmd_pop(store: &dyn ItemStore, kind: Option<String>) -> Result<()> {
     let kind_str = normalize_kind(kind);
-    let items = storage.search("", &kind_str, 1, ns)?;
+    let items = store.search("", &kind_str, 1)?;
     let Some(item) = items.into_iter().next() else {
         eprintln!("history is empty");
         std::process::exit(1);
     };
     emit_one(&item, false, false);
-    let img = storage.delete(item.id, ns)?;
-    if let Some(p) = img { let _ = std::fs::remove_file(p); }
+    store.delete(item.id)?;
     Ok(())
 }
 
 // ── watch ────────────────────────────────────────────────────────────────────
 
-fn cmd_watch(storage: &Storage, kind: Option<String>, ns: &str) -> Result<()> {
+fn cmd_watch(store: &dyn ItemStore, kind: Option<String>) -> Result<()> {
     let kind = normalize_kind(kind);
-    let mut last_max: i64 = storage
-        .search("", &kind, 1, ns)?
+    // Same poll-and-emit logic against either backend. For remote, we'd
+    // ideally use the server's SSE /v1/watch endpoint instead — that's a
+    // small follow-up.
+    let mut last_max: i64 = store
+        .search("", &kind, 1)?
         .first()
         .map(|it| it.id)
         .unwrap_or(0);
+    let interval = if store.backend() == StoreBackend::Remote { 1500 } else { 500 };
     loop {
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        let recent = storage.search("", &kind, 50, ns)?;
+        std::thread::sleep(std::time::Duration::from_millis(interval));
+        let recent = store.search("", &kind, 50)?;
         let mut new_items: Vec<&ClipItem> =
             recent.iter().filter(|it| it.id > last_max).collect();
         new_items.sort_by_key(|it| it.id);

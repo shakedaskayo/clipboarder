@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::classify::Kind;
 
@@ -92,7 +92,7 @@ pub struct Storage {
     conn: Connection,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClipItem {
     pub id: i64,
     pub kind: String,

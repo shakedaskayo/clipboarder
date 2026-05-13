@@ -115,6 +115,34 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/clear" >/dev/n
 assert "alice clear → 0 items"        '[ "$(curl -s -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" -eq 0 ]'
 assert "bob untouched (still 1)"      '[ "$(curl -s -H "Authorization: Bearer $TOKEN_BOB" "$BASE/v1/items" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" -eq 1 ]'
 
+section "transparent CLI client (env vars → remote backend)"
+RUN_REMOTE() {
+  env -u CLIPBOARDER_NAMESPACE \
+    CLIPBOARDER_SERVER="$BASE" CLIPBOARDER_TOKEN="$TOKEN_ALICE" "$CLI" "$@"
+}
+RUN_REMOTE_BOB() {
+  env -u CLIPBOARDER_NAMESPACE \
+    CLIPBOARDER_SERVER="$BASE" CLIPBOARDER_TOKEN="$TOKEN_BOB" "$CLI" "$@"
+}
+echo "alice CLI test note about anthropic" | RUN_REMOTE add --json --source claude > /dev/null
+echo "alice another note about react"      | RUN_REMOTE add --json --source claude > /dev/null
+echo "bob   private note"                  | RUN_REMOTE_BOB add --json --source bob   > /dev/null
+
+assert "remote doctor mentions remote backend" \
+  'out=$(RUN_REMOTE doctor 2>&1); echo "$out" | grep -q "remote "'
+assert "remote cb list ≥ 2 alice items" \
+  '[ "$(RUN_REMOTE list --limit 10 --json | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" -ge 2 ]'
+assert "remote cb search anthropic → 1 (alice)" \
+  '[ "$(RUN_REMOTE search anthropic --json | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" = "1" ]'
+assert "remote cb search anthropic → 0 (bob)" \
+  '[ "$(RUN_REMOTE_BOB search anthropic --json | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" = "0" ]'
+assert "remote cb p --grep returns content" \
+  '[ "$(RUN_REMOTE p --grep anthropic)" = "alice CLI test note about anthropic" ]'
+assert "remote cb stats describes backend" \
+  'RUN_REMOTE stats 2>&1 | grep -q "remote "'
+assert "remote cb pin + pinned filter" \
+  'ID=$(RUN_REMOTE list --limit 1 --json | python3 -c "import json,sys; print(json.load(sys.stdin)[0][\"id\"])") && RUN_REMOTE pin "$ID" && [ "$(RUN_REMOTE list --kind pinned --json | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" -ge 1 ]'
+
 section "revoke (file-level — live server has the old config cached)"
 "$CLI" admin token revoke "$TOKEN_BOB" 2>/dev/null
 assert "config no longer has bob token" '! grep -q "$TOKEN_BOB" "$HOME/Library/Application Support/com.clipboarder.app/server.toml"'

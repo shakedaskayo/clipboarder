@@ -180,9 +180,17 @@ Verified by [`scripts/test-server.sh`](https://github.com/shakedaskayo/clipboard
 - alice DELETE `/v1/items/{bob_id}` → 404
 - alice POST `/v1/clear` → bob's items untouched
 
+## Watch (CLI long-poll)
+
+`cb watch` polls the backend every 1.5 s when remote-mode is active and prints new items as JSON Lines. For agents that need true real-time, use the SSE endpoint directly:
+
+```bash
+curl -N -H "Authorization: Bearer $CLIPBOARDER_TOKEN" "$CLIPBOARDER_SERVER/v1/watch"
+```
+
 ## Roadmap
 
-- Transparent client backend swap (CLI subcommands route via HTTP when env vars set)
+- True SSE consumption in `cb watch` (currently long-polls)
 - Live config reload on `admin token revoke`
 - Argon2-hashed tokens at rest
 - Multi-token-per-namespace with last-used-at + revoke-by-fingerprint
