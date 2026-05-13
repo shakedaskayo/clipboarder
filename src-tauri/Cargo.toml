@@ -25,6 +25,8 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["trace", "cors", "limit"] }
 toml = "0.8"
 rand = "0.8"
+argon2 = "0.5"
+password-hash = { version = "0.5", features = ["rand_core"] }
 futures = "0.3"
 async-stream = "0.3"
 libc = "0.2"

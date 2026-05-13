@@ -290,9 +290,9 @@ pub enum AdminCommand {
 
 #[derive(Subcommand)]
 pub enum TokenAction {
-    /// Create a new bearer token bound to a namespace. Prints the new token
-    /// on stdout — copy it to your client immediately, it's not stored
-    /// anywhere else in human-readable form.
+    /// Create a new bearer token bound to a namespace. Prints the plaintext
+    /// bearer on stdout — copy it to your client immediately, it's argon2-
+    /// hashed at rest and can't be recovered from the config file.
     Create {
         /// Namespace this token will access. Created on first use.
         #[arg(long)]
@@ -300,12 +300,15 @@ pub enum TokenAction {
         /// Optional human-readable label for the GUI / `whoami`.
         #[arg(long)]
         label: Option<String>,
+        /// Grant cross-namespace admin privileges (web UI, `/v1/admin/*`).
+        #[arg(long)]
+        admin: bool,
         /// Path to the server config TOML. See `clipboarder serve --help`.
         #[arg(long)]
         config: Option<std::path::PathBuf>,
     },
 
-    /// List existing tokens (token prefix only — full value isn't echoed).
+    /// List existing tokens — fingerprint, namespace, label, last-used time.
     List {
         #[arg(long)]
         config: Option<std::path::PathBuf>,
@@ -313,7 +316,7 @@ pub enum TokenAction {
         json: bool,
     },
 
-    /// Revoke a token by full value (or by prefix if unique).
+    /// Revoke a token by fingerprint (`tk_…`) or by the full bearer.
     Revoke {
         token: String,
         #[arg(long)]
@@ -384,37 +387,63 @@ fn cmd_serve(
 }
 
 fn cmd_admin(action: AdminCommand) -> Result<()> {
-    use crate::server_config::{generate_token, ServerConfig, TokenEntry};
+    use crate::server_config::{
+        fingerprint_of, generate_token, hash_token, now_ms, ServerConfig, TokenEntry,
+    };
     match action {
         AdminCommand::Token { action } => match action {
-            TokenAction::Create { namespace, label, config } => {
+            TokenAction::Create { namespace, label, admin, config } => {
                 let path = config.unwrap_or_else(crate::server_config::default_config_path);
                 let mut cfg = ServerConfig::load(&path)?;
-                let token = generate_token();
+                // Generate, dedupe on fingerprint (62^8 collisions are
+                // astronomically rare but cheap to guard against).
+                let bearer = loop {
+                    let candidate = generate_token();
+                    let fp = fingerprint_of(&candidate);
+                    if !cfg.tokens.iter().any(|t| t.fingerprint == fp) {
+                        break candidate;
+                    }
+                };
+                let fingerprint = fingerprint_of(&bearer);
+                let hash = hash_token(&bearer)?;
                 cfg.tokens.push(TokenEntry {
-                    token: token.clone(),
+                    fingerprint: fingerprint.clone(),
+                    hash,
                     namespace: namespace.clone(),
                     label,
+                    created_at: now_ms(),
+                    last_used_at: None,
+                    admin,
+                    token: None,
                 });
                 cfg.save(&path)?;
-                println!("{token}");
-                eprintln!("  ↑ bearer token for namespace `{namespace}` — saved to {}", path.display());
+                println!("{bearer}");
+                let kind = if admin { "admin token" } else { "bearer token" };
+                eprintln!(
+                    "  ↑ {kind} for namespace `{namespace}` (fingerprint {fingerprint}) — saved to {}",
+                    path.display()
+                );
                 eprintln!("  Set on the client:");
                 eprintln!("    export CLIPBOARDER_SERVER='http://<host>:7474'");
-                eprintln!("    export CLIPBOARDER_TOKEN='{token}'");
+                eprintln!("    export CLIPBOARDER_TOKEN='{bearer}'");
+                eprintln!("  ⚠ this is the only time you'll see the plaintext; the hash is what's stored.");
             }
             TokenAction::List { config, json } => {
                 let path = config.unwrap_or_else(crate::server_config::default_config_path);
                 let cfg = ServerConfig::load(&path)?;
+                let now = now_ms();
                 if json {
                     let view: Vec<_> = cfg
                         .tokens
                         .iter()
                         .map(|t| {
                             serde_json::json!({
-                                "prefix": &t.token[..t.token.len().min(8)],
-                                "namespace": &t.namespace,
-                                "label": &t.label,
+                                "fingerprint": t.fingerprint,
+                                "namespace":   t.namespace,
+                                "label":       t.label,
+                                "created_at":  t.created_at,
+                                "last_used_at": t.last_used_at,
+                                "admin":       t.admin,
                             })
                         })
                         .collect();
@@ -422,14 +451,23 @@ fn cmd_admin(action: AdminCommand) -> Result<()> {
                 } else if cfg.tokens.is_empty() {
                     eprintln!("(no tokens — run `clipboarder admin token create --namespace …`)");
                 } else {
-                    println!("{:<12}  {:<24}  LABEL", "PREFIX", "NAMESPACE");
+                    println!(
+                        "{:<13}  {:<16}  {:<24}  {:<10}  ADMIN",
+                        "FINGERPRINT", "NAMESPACE", "LABEL", "LAST USED"
+                    );
                     for t in &cfg.tokens {
-                        let prefix = format!("{}…", &t.token[..t.token.len().min(8)]);
+                        let last_used = t
+                            .last_used_at
+                            .map(|ts| ago(now - ts))
+                            .unwrap_or_else(|| "—".into());
+                        let admin_flag = if t.admin { "yes" } else { "" };
                         println!(
-                            "{:<12}  {:<24}  {}",
-                            prefix,
+                            "{:<13}  {:<16}  {:<24}  {:<10}  {}",
+                            t.fingerprint,
                             t.namespace,
-                            t.label.as_deref().unwrap_or("")
+                            t.label.as_deref().unwrap_or(""),
+                            last_used,
+                            admin_flag,
                         );
                     }
                 }
@@ -437,15 +475,20 @@ fn cmd_admin(action: AdminCommand) -> Result<()> {
             TokenAction::Revoke { token, config } => {
                 let path = config.unwrap_or_else(crate::server_config::default_config_path);
                 let mut cfg = ServerConfig::load(&path)?;
+                // Accept either the full bearer or just its fingerprint. We
+                // derive the fingerprint from whatever the user passed and
+                // match strictly — partial fingerprint matches are too easy
+                // to typo into "revoke the wrong token."
+                let fp = fingerprint_of(&token);
                 let before = cfg.tokens.len();
-                cfg.tokens.retain(|t| t.token != token && !t.token.starts_with(&token));
+                cfg.tokens.retain(|t| t.fingerprint != fp);
                 let removed = before - cfg.tokens.len();
                 if removed == 0 {
-                    eprintln!("no token matched `{token}`");
+                    eprintln!("no token matched `{token}` (fingerprint `{fp}`)");
                     std::process::exit(1);
                 }
                 cfg.save(&path)?;
-                eprintln!("revoked {removed} token(s)");
+                eprintln!("revoked {removed} token(s); running server picks it up within ~2 s");
             }
         },
     }

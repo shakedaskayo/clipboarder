@@ -15,6 +15,7 @@
 //!
 //! Namespace is implicit — it's derived from the bearer token.
 
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -29,26 +30,39 @@ use axum::{
     Json, Router,
 };
 use futures::stream::Stream;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio::sync::broadcast;
 
 use crate::classify;
-use crate::server_config::{ServerConfig, TokenEntry};
+use crate::server_config::{now_ms, verify_token, ServerConfig, TokenEntry};
 use crate::storage::{ClipItem, NewItem, Storage};
 
 #[derive(Clone)]
 struct AppState {
-    config: Arc<ServerConfig>,
+    config_path: PathBuf,
+    /// Live-swappable config. The file watcher replaces this when server.toml
+    /// changes on disk; auth always reads through `.read()` so callers see the
+    /// most recent token map.
+    config: Arc<RwLock<ServerConfig>>,
     storage: Arc<Mutex<Storage>>,
+    /// Verified-bearer cache: a bearer that's already passed argon2 once stays
+    /// in here so subsequent requests are fast (µs lookup vs ~15 ms argon2).
+    /// Cleared whenever the config file is reloaded.
+    auth_cache: Arc<RwLock<HashMap<String, AuthedNs>>>,
     /// Broadcast of (namespace, item-id) for newly-inserted rows. Watch
     /// subscribers receive only items in their own namespace.
     new_items: broadcast::Sender<(String, i64)>,
 }
 
 #[derive(Debug, Clone)]
-struct AuthedNs(String);
+struct AuthedNs {
+    namespace: String,
+    label: Option<String>,
+    admin: bool,
+    fingerprint: String,
+}
 
 pub async fn run(config_path: PathBuf, bind_override: Option<String>) -> Result<()> {
     let config = ServerConfig::load(&config_path)
@@ -71,10 +85,17 @@ pub async fn run(config_path: PathBuf, bind_override: Option<String>) -> Result<
 
     let (tx, _) = broadcast::channel(256);
     let state = AppState {
-        config: Arc::new(config),
+        config_path: config_path.clone(),
+        config: Arc::new(RwLock::new(config)),
         storage: Arc::new(Mutex::new(storage)),
+        auth_cache: Arc::new(RwLock::new(HashMap::new())),
         new_items: tx,
     };
+
+    // Spawn a tiny watcher that polls the config file's mtime. If it changes,
+    // we reload + swap the tokens map atomically. Two-second granularity is
+    // plenty: `admin token revoke` typically takes effect within a few seconds.
+    spawn_config_reloader(state.clone());
 
     let app = Router::new()
         .route("/v1/health", get(health))
@@ -104,13 +125,92 @@ fn auth(state: &AppState, headers: &HeaderMap) -> Result<AuthedNs, StatusCode> {
         return Err(StatusCode::UNAUTHORIZED);
     };
     let s = value.to_str().map_err(|_| StatusCode::UNAUTHORIZED)?;
-    let token = s.strip_prefix("Bearer ").ok_or(StatusCode::UNAUTHORIZED)?.trim();
-    let entry = state.config.lookup_token(token).ok_or(StatusCode::UNAUTHORIZED)?;
-    Ok(AuthedNs(entry.namespace.clone()))
+    let bearer = s.strip_prefix("Bearer ").ok_or(StatusCode::UNAUTHORIZED)?.trim();
+
+    // Fast path — bearer already verified this process lifetime.
+    if let Some(authed) = state.auth_cache.read().get(bearer).cloned() {
+        touch_token(state, &authed.fingerprint);
+        return Ok(authed);
+    }
+
+    // Slow path — look up by fingerprint, argon2-verify the full bearer.
+    let entry: TokenEntry = {
+        let cfg = state.config.read();
+        cfg.lookup_by_fingerprint(bearer).cloned().ok_or(StatusCode::UNAUTHORIZED)?
+    };
+    if !verify_token(bearer, &entry.hash) {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+    let authed = AuthedNs {
+        namespace: entry.namespace.clone(),
+        label: entry.label.clone(),
+        admin: entry.admin,
+        fingerprint: entry.fingerprint.clone(),
+    };
+    state.auth_cache.write().insert(bearer.to_string(), authed.clone());
+    touch_token(state, &authed.fingerprint);
+    Ok(authed)
 }
 
-fn lookup_label<'a>(state: &'a AppState, token: &str) -> Option<&'a TokenEntry> {
-    state.config.lookup_token(token)
+/// Update `last_used_at` for the token that just authenticated. We modify the
+/// in-memory copy and persist to disk at most once every 30 s per fingerprint
+/// (so we don't thrash the config file on a busy server).
+fn touch_token(state: &AppState, fingerprint: &str) {
+    let now = now_ms();
+    let mut cfg = state.config.write();
+    let Some(entry) = cfg.tokens.iter_mut().find(|t| t.fingerprint == fingerprint) else {
+        return;
+    };
+    let prev = entry.last_used_at;
+    entry.last_used_at = Some(now);
+    // Persist to disk at most once every 30 s per fingerprint so we don't
+    // thrash the config file. `None` (never used before) always flushes.
+    let due = !matches!(prev, Some(p) if now.saturating_sub(p) < 30_000);
+    if !due {
+        return;
+    }
+    let snapshot = cfg.clone();
+    drop(cfg);
+    // Best-effort — losing one timestamp update isn't worth crashing over.
+    let _ = snapshot.save(&state.config_path);
+}
+
+/// Background tokio task: poll the server config's mtime every 2 s; reload on
+/// change. This is how `admin token revoke` takes effect without restarting
+/// the running server.
+fn spawn_config_reloader(state: AppState) {
+    tokio::spawn(async move {
+        let path = state.config_path.clone();
+        let mut last_mtime = std::fs::metadata(&path)
+            .and_then(|m| m.modified())
+            .ok();
+        loop {
+            tokio::time::sleep(Duration::from_secs(2)).await;
+            let cur_mtime = std::fs::metadata(&path)
+                .and_then(|m| m.modified())
+                .ok();
+            if cur_mtime == last_mtime {
+                continue;
+            }
+            last_mtime = cur_mtime;
+            match ServerConfig::load(&path) {
+                Ok(new_cfg) => {
+                    let n_tokens = new_cfg.tokens.len();
+                    *state.config.write() = new_cfg;
+                    // Any cached bearer might now point at a revoked token —
+                    // drop the whole cache so the next request re-verifies.
+                    state.auth_cache.write().clear();
+                    eprintln!(
+                        "[clipboarder server] config reloaded ({} token(s))",
+                        n_tokens
+                    );
+                }
+                Err(e) => {
+                    eprintln!("[clipboarder server] config reload failed: {e:#}");
+                }
+            }
+        }
+    });
 }
 
 // ── handlers ────────────────────────────────────────────────────────────────
@@ -121,21 +221,17 @@ async fn health() -> &'static str { "ok" }
 struct WhoamiBody {
     namespace: String,
     label: Option<String>,
+    fingerprint: String,
+    admin: bool,
 }
 
 async fn whoami(State(s): State<AppState>, headers: HeaderMap) -> Result<Json<WhoamiBody>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
-    let token = headers
-        .get(header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-        .unwrap_or("")
-        .trim()
-        .to_string();
-    let entry = lookup_label(&s, &token);
+    let authed = auth(&s, &headers)?;
     Ok(Json(WhoamiBody {
-        namespace: ns,
-        label: entry.and_then(|t| t.label.clone()),
+        namespace: authed.namespace,
+        label: authed.label,
+        fingerprint: authed.fingerprint,
+        admin: authed.admin,
     }))
 }
 
@@ -156,7 +252,7 @@ async fn items_list(
     headers: HeaderMap,
     Query(qry): Query<ListQuery>,
 ) -> Result<Json<Vec<ClipItem>>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     let kind = qry.kind.unwrap_or_else(|| "all".into());
     let q = qry.q.unwrap_or_default();
     let items = s
@@ -172,7 +268,7 @@ async fn items_show(
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> Result<Json<ClipItem>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     let it = s
         .storage
         .lock()
@@ -205,7 +301,7 @@ async fn items_create(
     headers: HeaderMap,
     Json(body): Json<CreateBody>,
 ) -> Result<Json<CreateReply>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     if body.content.is_empty() {
         return Err(StatusCode::BAD_REQUEST);
     }
@@ -265,7 +361,7 @@ async fn items_delete(
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     // Only delete if it actually exists in the caller's namespace.
     let exists = s
         .storage
@@ -312,7 +408,7 @@ async fn set_pin(
     id: i64,
     want: bool,
 ) -> Result<Json<PinReply>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     let cur = s
         .storage
         .lock()
@@ -332,7 +428,7 @@ async fn clear_history(
     State(s): State<AppState>,
     headers: HeaderMap,
 ) -> Result<StatusCode, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     let imgs = s
         .storage
         .lock()
@@ -356,7 +452,7 @@ async fn stats(
     State(s): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<StatsBody>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     let all = s
         .storage
         .lock()
@@ -377,7 +473,7 @@ async fn watch_sse(
     State(s): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::io::Error>>>, StatusCode> {
-    let AuthedNs(ns) = auth(&s, &headers)?;
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
     let mut rx = s.new_items.subscribe();
     let storage = s.storage.clone();
 

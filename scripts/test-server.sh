@@ -42,6 +42,8 @@ assert "alice token starts with tk_"  '[[ "$TOKEN_ALICE" == tk_* ]]'
 assert "bob token starts with tk_"    '[[ "$TOKEN_BOB"   == tk_* ]]'
 assert "tokens differ"                '[ "$TOKEN_ALICE" != "$TOKEN_BOB" ]'
 assert "admin token list shows both"  '[ "$("$CLI" admin token list 2>&1 | grep -c "tk_")" -eq 2 ]'
+assert "config stores argon2 hash, not plaintext" \
+  '! grep -F "$TOKEN_ALICE" "$HOME/Library/Application Support/com.clipboarder.app/server.toml" && grep -q "argon2" "$HOME/Library/Application Support/com.clipboarder.app/server.toml"'
 
 section "boot"
 "$CLI" serve --bind "127.0.0.1:$PORT" > /tmp/clipd-srv.log 2>&1 &
@@ -163,12 +165,32 @@ assert "watch emitted both events on separate lines" \
   '[ "$(grep -c "sse " "$WATCH_OUT")" -ge 2 ]'
 rm -f "$WATCH_OUT"
 
-section "revoke (file-level — live server has the old config cached)"
-"$CLI" admin token revoke "$TOKEN_BOB" 2>/dev/null
-assert "config no longer has bob token" '! grep -q "$TOKEN_BOB" "$HOME/Library/Application Support/com.clipboarder.app/server.toml"'
-# A revoke takes effect after `clipboarder serve` restarts. The running
-# server doesn't watch the config file (yet), so we deliberately skip a live
-# 401 assertion here.
+section "revoke + live config reload"
+# Bob's fingerprint is the first 11 chars of his bearer.
+BOB_FP=${TOKEN_BOB:0:11}
+"$CLI" admin token revoke "$BOB_FP" 2>/dev/null
+assert "config no longer references bob's fingerprint" \
+  '! grep -q "fingerprint = \"$BOB_FP\"" "$HOME/Library/Application Support/com.clipboarder.app/server.toml"'
+# Reloader polls every 2 s; allow up to ~5 s for the running server to pick it up.
+hit_401=""
+for _ in 1 2 3 4 5; do
+  sleep 1
+  code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN_BOB" "$BASE/v1/items")
+  if [ "$code" = "401" ]; then
+    hit_401="yes"
+    break
+  fi
+done
+assert "running server rejects revoked token (live reload)" '[ "$hit_401" = "yes" ]'
+assert "alice's token still works after bob revoked" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items")" = "200" ]'
+
+section "last_used_at"
+# Provoke a fresh auth on alice's token; the touch should bubble to disk.
+curl -s -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items?limit=1" >/dev/null
+sleep 0.2
+assert "alice's entry has a last_used_at timestamp" \
+  'grep -A6 "namespace = \"alice\"" "$HOME/Library/Application Support/com.clipboarder.app/server.toml" | grep -q "last_used_at"'
 
 echo
 total=$((pass+fail))
