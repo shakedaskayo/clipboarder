@@ -26,7 +26,6 @@ pub fn search_items(state: State<AppState>, args: QueryArgs) -> CmdResult<Vec<Cl
 
 #[tauri::command]
 pub fn paste_item(app: AppHandle, state: State<AppState>, id: i64) -> CmdResult<()> {
-    eprintln!("[paste] paste_item called id={id}");
     let item = {
         let mut db = state.db.lock();
         let it = db.get(id, DEFAULT_NAMESPACE).map_err(err)?;
@@ -34,63 +33,41 @@ pub fn paste_item(app: AppHandle, state: State<AppState>, id: i64) -> CmdResult<
         it
     };
     let Some(item) = item else {
-        eprintln!("[paste] item not found id={id}");
         return Err("item not found".into());
     };
-    eprintln!("[paste] item kind={} content_len={}", item.kind, item.content.len());
-
-    #[cfg(target_os = "macos")]
-    {
-        let pre = crate::macos::frontmost_bundle_id().unwrap_or_else(|| "<none>".into());
-        eprintln!("[paste] frontmost BEFORE hide: {pre}");
-    }
-
     paste::copy_to_clipboard(&item).map_err(err)?;
-    eprintln!("[paste] clipboard written");
 
     #[cfg(target_os = "macos")]
     let prev_pid: Option<i32> = *state.prev_frontmost_pid.lock();
-    #[cfg(target_os = "macos")]
-    eprintln!("[paste] saved prev pid: {prev_pid:?}");
 
+    // Hide our window on the AppKit main thread. Tauri dispatches sync
+    // commands off-main, and [NSApp hide:] from a worker thread doesn't
+    // reliably trigger deactivation on macOS 15. We block on a oneshot so
+    // the hide is observable before we touch focus.
     let (tx, rx) = std::sync::mpsc::channel::<()>();
     let app_for_main = app.clone();
-    let dispatch_res = app.run_on_main_thread(move || {
-        eprintln!("[paste] (main) running hide");
+    app.run_on_main_thread(move || {
         if let Some(win) = app_for_main.get_webview_window("main") {
             let _ = win.hide();
         }
         #[cfg(target_os = "macos")]
         crate::macos::hide_app();
-        eprintln!("[paste] (main) hide done");
         let _ = tx.send(());
-    });
-    eprintln!("[paste] dispatch result: {:?}", dispatch_res.is_ok());
-    let wait_res = rx.recv_timeout(std::time::Duration::from_millis(500));
-    eprintln!("[paste] main-thread sync recv: {wait_res:?}");
+    })
+    .map_err(|e| format!("dispatch hide: {e}"))?;
+    let _ = rx.recv_timeout(std::time::Duration::from_millis(500));
 
-    // Explicitly bring the user's previous app back to the foreground.
-    // [NSApp hide:] on macOS 15 doesn't reliably hand focus back when our
-    // window is floating + hidesOnDeactivate, so we activate the saved PID
-    // directly. This is what makes the synthesized ⌘V land in their text
-    // field instead of clipboarder's invisible webview.
+    // [NSApp hide:] alone doesn't reliably hand focus back when clipboarder's
+    // window is floating + hidesOnDeactivate on macOS 15 — clipboarder stays
+    // frontmost and the synthesized ⌘V lands on our (hidden) webview.
+    // Activating the snapshotted PID directly is what makes the paste land
+    // in the user's previous app.
     #[cfg(target_os = "macos")]
     if let Some(pid) = prev_pid {
-        let ok = crate::macos::activate_app_by_pid(pid);
-        eprintln!("[paste] activate_app_by_pid({pid}) -> {ok}");
-    } else {
-        eprintln!("[paste] no prev pid captured — relying on [NSApp hide:]");
+        let _ = crate::macos::activate_app_by_pid(pid);
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        let post = crate::macos::frontmost_bundle_id().unwrap_or_else(|| "<none>".into());
-        eprintln!("[paste] frontmost AFTER hide+activate: {post}");
-    }
-
-    let synth_res = paste::simulate_paste();
-    eprintln!("[paste] simulate_paste returned: {synth_res:?}");
-    synth_res.map_err(err)?;
+    paste::simulate_paste().map_err(err)?;
     Ok(())
 }
 

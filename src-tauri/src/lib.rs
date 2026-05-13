@@ -273,24 +273,16 @@ fn show_window(app: &AppHandle) {
 
 /// Snapshot the PID of the frontmost app *before* we activate clipboarder,
 /// so paste-back has something concrete to re-activate. Skipped if the
-/// frontmost is already clipboarder itself (e.g. the user re-presses the
-/// hotkey while the overlay is up) — overwriting in that case would lose
-/// the original target.
+/// frontmost is already clipboarder itself (re-press the hotkey while the
+/// overlay is up) — overwriting in that case would lose the original target.
 fn capture_prev_frontmost(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
-        let pid = macos::frontmost_pid();
-        let self_bid = macos::frontmost_bundle_id();
-        let is_self = self_bid.as_deref() == Some("com.clipboarder.app");
-        if let Some(state) = app.try_state::<AppState>() {
-            let mut slot = state.prev_frontmost_pid.lock();
-            if !is_self {
-                eprintln!("[paste] captured prev frontmost pid={pid:?} bid={self_bid:?}");
-                *slot = pid;
-            } else {
-                eprintln!("[paste] skip capture — frontmost is already clipboarder");
-            }
-        }
+        let is_self = macos::frontmost_bundle_id().as_deref()
+            == Some("com.clipboarder.app");
+        if is_self { return; }
+        let Some(state) = app.try_state::<AppState>() else { return; };
+        *state.prev_frontmost_pid.lock() = macos::frontmost_pid();
     }
     #[cfg(not(target_os = "macos"))]
     {
