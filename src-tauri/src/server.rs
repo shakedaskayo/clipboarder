@@ -6,6 +6,7 @@
 //!   GET    /v1/items?q&kind&limit      → list/search
 //!   GET    /v1/items/:id               → show
 //!   POST   /v1/items                   → add  (body: {content, kind?, meta?, source_app?})
+//!   GET    /v1/items/:id/image         → raw image bytes (image-kind items only)
 //!   DELETE /v1/items/:id               → delete
 //!   POST   /v1/items/:id/pin           → pin
 //!   DELETE /v1/items/:id/pin           → unpin
@@ -25,7 +26,7 @@ use anyhow::{Context, Result};
 use axum::{
     extract::{Path, Query, State},
     http::{header, HeaderMap, StatusCode},
-    response::{sse::Event, Sse},
+    response::{sse::Event, IntoResponse, Sse},
     routing::{get, post},
     Json, Router,
 };
@@ -102,6 +103,7 @@ pub async fn run(config_path: PathBuf, bind_override: Option<String>) -> Result<
         .route("/v1/whoami", get(whoami))
         .route("/v1/items", get(items_list).post(items_create))
         .route("/v1/items/:id", get(items_show).delete(items_delete))
+        .route("/v1/items/:id/image", get(items_image))
         .route("/v1/items/:id/pin", post(items_pin).delete(items_unpin))
         .route("/v1/clear", post(clear_history))
         .route("/v1/stats", get(stats))
@@ -276,6 +278,31 @@ async fn items_show(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
     Ok(Json(it))
+}
+
+/// `GET /v1/items/:id/image` — raw PNG bytes for an image-kind item. Returns
+/// 404 if the item doesn't exist in the caller's namespace, isn't an image,
+/// or its image file has been garbage-collected from disk.
+async fn items_image(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<axum::response::Response, StatusCode> {
+    let AuthedNs { namespace: ns, .. } = auth(&s, &headers)?;
+    let item = s
+        .storage
+        .lock()
+        .get(id, &ns)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+    let path = item.image_path.as_deref().ok_or(StatusCode::NOT_FOUND)?;
+    let bytes = std::fs::read(path).map_err(|_| StatusCode::NOT_FOUND)?;
+    Ok((
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "image/png")],
+        bytes,
+    )
+        .into_response())
 }
 
 #[derive(Deserialize)]

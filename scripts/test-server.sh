@@ -165,6 +165,35 @@ assert "watch emitted both events on separate lines" \
   '[ "$(grep -c "sse " "$WATCH_OUT")" -ge 2 ]'
 rm -f "$WATCH_OUT"
 
+section "image endpoint"
+# A minimal 67-byte 1x1 PNG. Sidestepping POST /v1/items because that route
+# only ingests text — image-kind rows are normally written by the GUI watcher
+# directly via SQLite. Insert one by hand so we can exercise GET …/image.
+IMG_PATH="$HOME/Library/Application Support/com.clipboarder.app/test.png"
+python3 -c 'import sys, base64; sys.stdout.buffer.write(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="))' > "$IMG_PATH"
+DB="$HOME/Library/Application Support/com.clipboarder.app/clipboarder.sqlite"
+SHA=$(shasum -a 256 "$IMG_PATH" | cut -d' ' -f1)
+SIZE=$(wc -c < "$IMG_PATH" | tr -d ' ')
+NOW=$(date +%s)000
+# `trusted_schema=ON` lets us touch items_fts via its INSERT trigger from a
+# sqlite3 CLI session (SQLite's default for unknown connections is OFF).
+sqlite3 "$DB" "PRAGMA trusted_schema=ON; INSERT INTO items (kind, content, preview, image_path, source_app, meta, content_hash, size, pinned, created_at, last_used_at, namespace) VALUES ('image', '[image]', '[image]', '$IMG_PATH', 'test', NULL, '$SHA', $SIZE, 0, $NOW, $NOW, 'alice');"
+IMG_ID=$(sqlite3 "$DB" "SELECT id FROM items WHERE image_path='$IMG_PATH' LIMIT 1;")
+assert "image item inserted via sqlite"     '[ -n "$IMG_ID" ]'
+
+TMP_OUT=$(mktemp -t clipboarder-img.XXXXXX)
+HTTP_CODE=$(curl -s -o "$TMP_OUT" -w "%{http_code}" -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items/$IMG_ID/image")
+assert "alice GET /v1/items/:id/image → 200" '[ "$HTTP_CODE" = "200" ]'
+GOT_SHA=$(shasum -a 256 "$TMP_OUT" | cut -d' ' -f1)
+assert "image bytes round-trip intact"       '[ "$GOT_SHA" = "$SHA" ]'
+assert "Content-Type was image/png"          \
+  '[ "$(curl -s -o /dev/null -w "%{content_type}" -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items/$IMG_ID/image")" = "image/png" ]'
+assert "bob → 404 on alice's image (namespace isolated)" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN_BOB" "$BASE/v1/items/$IMG_ID/image")" = "404" ]'
+assert "no auth → 401" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" "$BASE/v1/items/$IMG_ID/image")" = "401" ]'
+rm -f "$TMP_OUT"
+
 section "revoke + live config reload"
 # Bob's fingerprint is the first 11 chars of his bearer.
 BOB_FP=${TOKEN_BOB:0:11}

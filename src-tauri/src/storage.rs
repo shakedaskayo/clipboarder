@@ -127,25 +127,23 @@ impl Storage {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "synchronous", "NORMAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
-        conn.execute_batch(SCHEMA)?;
 
-        // Migrations for existing DBs created before new columns existed.
+        // Migrations BEFORE the schema batch. SCHEMA's namespace-scoped
+        // indexes reference the `namespace` column, so on a DB created before
+        // that column existed we have to ALTER first or the batch errors out.
+        // Fresh DBs: the ALTERs fail harmlessly (no table yet) and the SCHEMA
+        // creates the column itself.
         let _ = conn.execute("ALTER TABLE items ADD COLUMN source_app_id TEXT", []);
-        // namespace column was added later; ALTER fails harmlessly on fresh DBs.
         let _ = conn.execute(
             "ALTER TABLE items ADD COLUMN namespace TEXT NOT NULL DEFAULT 'default'",
             [],
         );
-        // Old unique index is on content_hash alone; replace with namespace-scoped.
+        // The pre-namespace index was on content_hash alone; CREATE INDEX
+        // IF NOT EXISTS matches by name, so drop the old shape first so the
+        // SCHEMA's composite (namespace, content_hash) form takes effect.
         let _ = conn.execute("DROP INDEX IF EXISTS idx_items_hash", []);
-        let _ = conn.execute(
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_items_hash ON items(namespace, content_hash)",
-            [],
-        );
-        let _ = conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_items_ns_last_used ON items(namespace, last_used_at DESC)",
-            [],
-        );
+
+        conn.execute_batch(SCHEMA)?;
 
         Ok(Self { conn })
     }

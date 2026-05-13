@@ -842,15 +842,11 @@ fn cmd_copy(store: &dyn ItemStore, id: i64) -> Result<()> {
         std::process::exit(1);
     };
     if item.kind == "image" {
-        if let Some(path) = &item.image_path {
-            // Image bytes live on the *server's* disk; for remote stores the
-            // path won't resolve locally. Fall back to text content for the
-            // remote case until we add /v1/items/:id/image.
-            if std::path::Path::new(path).exists() {
-                let bytes = std::fs::read(path)?;
-                write_clipboard_image(&bytes)?;
-                return Ok(());
-            }
+        // fetch_image works against either backend — LocalStore reads
+        // image_path off disk, RemoteStore hits /v1/items/:id/image.
+        if let Some(bytes) = store.fetch_image(id)? {
+            write_clipboard_image(&bytes)?;
+            return Ok(());
         }
     }
     write_clipboard_text(&item.content)?;

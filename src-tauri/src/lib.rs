@@ -39,6 +39,11 @@ pub struct AppState {
     pub app_icons: Arc<AppIconCache>,
     pub url_meta: Arc<UrlMetaCache>,
     pub images_dir: std::path::PathBuf,
+    /// PID of the app that was frontmost at the instant the user invoked
+    /// the overlay (global hotkey or tray click). Captured before
+    /// clipboarder activates so paste-back can explicitly re-activate it
+    /// — `[NSApp hide:]` alone doesn't reliably hand focus back on macOS 15.
+    pub prev_frontmost_pid: Arc<Mutex<Option<i32>>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -93,6 +98,7 @@ pub fn run() {
                 app_icons: app_icons.clone(),
                 url_meta: url_meta.clone(),
                 images_dir: images_dir.clone(),
+                prev_frontmost_pid: Arc::new(Mutex::new(None)),
             });
 
             // Start clipboard watcher
@@ -245,6 +251,7 @@ fn toggle_window(app: &AppHandle) {
                 let _ = win.hide();
             }
             _ => {
+                capture_prev_frontmost(app);
                 let _ = win.center();
                 let _ = win.show();
                 let _ = win.set_focus();
@@ -256,9 +263,37 @@ fn toggle_window(app: &AppHandle) {
 
 fn show_window(app: &AppHandle) {
     if let Some(win) = app.get_webview_window("main") {
+        capture_prev_frontmost(app);
         let _ = win.center();
         let _ = win.show();
         let _ = win.set_focus();
         let _ = app.emit("window:shown", ());
+    }
+}
+
+/// Snapshot the PID of the frontmost app *before* we activate clipboarder,
+/// so paste-back has something concrete to re-activate. Skipped if the
+/// frontmost is already clipboarder itself (e.g. the user re-presses the
+/// hotkey while the overlay is up) — overwriting in that case would lose
+/// the original target.
+fn capture_prev_frontmost(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        let pid = macos::frontmost_pid();
+        let self_bid = macos::frontmost_bundle_id();
+        let is_self = self_bid.as_deref() == Some("com.clipboarder.app");
+        if let Some(state) = app.try_state::<AppState>() {
+            let mut slot = state.prev_frontmost_pid.lock();
+            if !is_self {
+                eprintln!("[paste] captured prev frontmost pid={pid:?} bid={self_bid:?}");
+                *slot = pid;
+            } else {
+                eprintln!("[paste] skip capture — frontmost is already clipboarder");
+            }
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
     }
 }

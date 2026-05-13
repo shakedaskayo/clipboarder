@@ -55,6 +55,14 @@ pub trait ItemStore: Send + Sync {
         &'a self,
         kind: &str,
     ) -> Result<Box<dyn Iterator<Item = Result<ClipItem>> + Send + 'a>>;
+
+    /// Fetch raw image bytes (PNG) for an image-kind item. Returns:
+    ///
+    /// - `Ok(Some(bytes))` — the item is an image and the bytes are available
+    /// - `Ok(None)` — item exists but has no image data (text item, or the
+    ///   image file on a remote server has been garbage-collected)
+    /// - `Err(_)` — network / I/O failure
+    fn fetch_image(&self, id: i64) -> Result<Option<Vec<u8>>>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -245,6 +253,15 @@ impl ItemStore for LocalStore {
             last_max,
             buffer: VecDeque::new(),
         }))
+    }
+
+    fn fetch_image(&self, id: i64) -> Result<Option<Vec<u8>>> {
+        let Some(item) = self.get(id)? else { return Ok(None); };
+        let Some(path) = item.image_path.as_deref() else { return Ok(None); };
+        if !std::path::Path::new(path).exists() {
+            return Ok(None);
+        }
+        Ok(Some(std::fs::read(path).context("read image_path")?))
     }
 }
 
@@ -473,6 +490,20 @@ impl ItemStore for RemoteStore {
             reader: BufReader::new(resp),
             kind_filter: kind.to_string(),
         }))
+    }
+
+    fn fetch_image(&self, id: i64) -> Result<Option<Vec<u8>>> {
+        let resp = self
+            .req(reqwest::Method::GET, &format!("/v1/items/{id}/image"))
+            .send()
+            .context("GET /v1/items/:id/image")?;
+        if resp.status() == reqwest::StatusCode::NOT_FOUND {
+            return Ok(None);
+        }
+        if !resp.status().is_success() {
+            anyhow::bail!("remote fetch_image: HTTP {}", resp.status());
+        }
+        Ok(Some(resp.bytes().context("read image bytes")?.to_vec()))
     }
 }
 

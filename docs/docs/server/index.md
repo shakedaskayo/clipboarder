@@ -65,6 +65,7 @@ All routes are under `/v1` and require `Authorization: Bearer tk_…`. The names
 | `GET`    | `/v1/items?q&kind&limit`  | — | array of items |
 | `POST`   | `/v1/items`               | `{content, kind?, meta?, source_app?}` | `{id, inserted, kind}` |
 | `GET`    | `/v1/items/{id}`          | — | item |
+| `GET`    | `/v1/items/{id}/image`    | — | raw PNG bytes (image-kind items) |
 | `DELETE` | `/v1/items/{id}`          | — | 204 |
 | `POST`   | `/v1/items/{id}/pin`      | — | `{id, pinned: true}` |
 | `DELETE` | `/v1/items/{id}/pin`      | — | `{id, pinned: false}` |
@@ -211,5 +212,4 @@ Each new item is delivered as `event: item` with a JSON `data:` payload. Keep-al
 
 ## Roadmap
 
-- `/v1/items/:id/image` for cross-machine image copy (currently text-only over remote)
 - Web UI for token + namespace management

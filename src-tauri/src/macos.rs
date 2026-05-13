@@ -62,6 +62,42 @@ pub fn hide_app() {
     }
 }
 
+/// Returns the PID of the frontmost application. We capture this at the
+/// instant the global hotkey fires (before clipboarder activates) so that
+/// paste-back can explicitly re-activate that exact app — `[NSApp hide:]`
+/// alone doesn't reliably deactivate clipboarder on macOS 15 once the
+/// window is configured floating + hidesOnDeactivate.
+pub fn frontmost_pid() -> Option<i32> {
+    unsafe {
+        let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        if workspace == nil { return None; }
+        let app: id = msg_send![workspace, frontmostApplication];
+        if app == nil { return None; }
+        let pid: i32 = msg_send![app, processIdentifier];
+        if pid <= 0 { None } else { Some(pid) }
+    }
+}
+
+/// Bring the app with the given PID back to the foreground. Used by
+/// paste-back to restore the user's previous app right before we synthesize
+/// ⌘V. Returns true if AppKit accepted the activate call.
+pub fn activate_app_by_pid(pid: i32) -> bool {
+    unsafe {
+        let cls: id = msg_send![class!(NSRunningApplication), class];
+        if cls == nil { return false; }
+        let app: id = msg_send![class!(NSRunningApplication),
+                                runningApplicationWithProcessIdentifier: pid];
+        if app == nil { return false; }
+        // NSApplicationActivateAllWindows = 1 << 0,
+        // NSApplicationActivateIgnoringOtherApps = 1 << 1.
+        // We OR both so the target app's key window gets focus even though
+        // clipboarder is technically still "active" at the moment of call.
+        let options: u64 = 0b11;
+        let ok: objc::runtime::BOOL = msg_send![app, activateWithOptions: options];
+        ok != objc::runtime::NO
+    }
+}
+
 /// Returns the bundle identifier of the frontmost application, e.g.
 /// "com.apple.Safari". Returns None when nothing is frontmost or the call
 /// fails — callers should treat that as "no exclusion match".
