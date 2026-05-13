@@ -18,11 +18,9 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use serde::Serialize;
 
-use crate::classify;
 use crate::secrets;
-use crate::storage::{ClipItem, NewItem, Storage, DEFAULT_NAMESPACE};
+use crate::storage::ClipItem;
 use crate::store::{open_store, ItemStore, StoreBackend, UpsertRequest};
 
 /// Command vocabulary the dual-mode dispatch in main.rs recognizes. Listed
@@ -424,7 +422,7 @@ fn cmd_admin(action: AdminCommand) -> Result<()> {
                 } else if cfg.tokens.is_empty() {
                     eprintln!("(no tokens — run `clipboarder admin token create --namespace …`)");
                 } else {
-                    println!("{:<12}  {:<24}  {}", "PREFIX", "NAMESPACE", "LABEL");
+                    println!("{:<12}  {:<24}  LABEL", "PREFIX", "NAMESPACE");
                     for t in &cfg.tokens {
                         let prefix = format!("{}…", &t.token[..t.token.len().min(8)]);
                         println!(
@@ -524,8 +522,8 @@ struct CompactItem<'a> {
 }
 
 /// Apply --since, --no-secrets, --snippet, --max-bytes to a result set.
-fn apply_agent_opts<'a>(
-    items: &'a [ClipItem],
+fn apply_agent_opts(
+    items: &[ClipItem],
     grep: Option<&str>,
     opts: &AgentOpts,
 ) -> Vec<ClipItem> {
@@ -818,15 +816,6 @@ fn cmd_copy(store: &dyn ItemStore, id: i64) -> Result<()> {
 
 // ── stats ────────────────────────────────────────────────────────────────────
 
-#[derive(Serialize)]
-struct Stats {
-    total: i64,
-    pinned: i64,
-    by_kind: std::collections::BTreeMap<String, i64>,
-    db_path: String,
-    db_size_bytes: u64,
-}
-
 fn cmd_stats(store: &dyn ItemStore, json: bool) -> Result<()> {
     let stats = store.stats()?;
     if json {
@@ -845,6 +834,7 @@ fn cmd_stats(store: &dyn ItemStore, json: bool) -> Result<()> {
 
 // ── paste / pop ──────────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 fn cmd_paste(
     store: &dyn ItemStore,
     n: usize,
@@ -947,27 +937,21 @@ fn cmd_pop(store: &dyn ItemStore, kind: Option<String>) -> Result<()> {
 
 fn cmd_watch(store: &dyn ItemStore, kind: Option<String>) -> Result<()> {
     let kind = normalize_kind(kind);
-    // Same poll-and-emit logic against either backend. For remote, we'd
-    // ideally use the server's SSE /v1/watch endpoint instead — that's a
-    // small follow-up.
-    let mut last_max: i64 = store
-        .search("", &kind, 1)?
-        .first()
-        .map(|it| it.id)
-        .unwrap_or(0);
-    let interval = if store.backend() == StoreBackend::Remote { 1500 } else { 500 };
-    loop {
-        std::thread::sleep(std::time::Duration::from_millis(interval));
-        let recent = store.search("", &kind, 50)?;
-        let mut new_items: Vec<&ClipItem> =
-            recent.iter().filter(|it| it.id > last_max).collect();
-        new_items.sort_by_key(|it| it.id);
-        for it in new_items {
-            println!("{}", serde_json::to_string(it)?);
-            last_max = last_max.max(it.id);
+    // Local → polling iterator; Remote → SSE iterator. Both yield items
+    // oldest-first as they arrive.
+    for result in store.watch(&kind)? {
+        match result {
+            Ok(item) => {
+                println!("{}", serde_json::to_string(&item)?);
+                std::io::stdout().flush().ok();
+            }
+            Err(e) => {
+                eprintln!("clipboarder watch: {e}");
+                return Err(e);
+            }
         }
-        std::io::stdout().flush().ok();
     }
+    Ok(())
 }
 
 // ── output helpers ───────────────────────────────────────────────────────────
@@ -1030,13 +1014,6 @@ fn ago(ms: i64) -> String {
     let h = m / 60;
     if h < 24 { return format!("{h}h"); }
     format!("{}d", h / 24)
-}
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    use sha2::{Digest, Sha256};
-    let mut h = Sha256::new();
-    h.update(bytes);
-    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
 }
 
 // ── clipboard helpers ────────────────────────────────────────────────────────

@@ -143,6 +143,26 @@ assert "remote cb stats describes backend" \
 assert "remote cb pin + pinned filter" \
   'ID=$(RUN_REMOTE list --limit 1 --json | python3 -c "import json,sys; print(json.load(sys.stdin)[0][\"id\"])") && RUN_REMOTE pin "$ID" && [ "$(RUN_REMOTE list --kind pinned --json | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")" -ge 1 ]'
 
+section "transparent CLI watch (SSE consumption)"
+WATCH_OUT=$(mktemp -t clipboarder-watch.XXXXXX)
+RUN_REMOTE watch > "$WATCH_OUT" 2>/dev/null &
+WATCH_PID=$!
+# Give SSE a beat to connect + send the initial `ready` event.
+sleep 0.6
+echo "sse smoke test — $(date +%s%N)" | RUN_REMOTE add --json --source claude > /dev/null
+echo "sse second event"               | RUN_REMOTE add --json --source claude > /dev/null
+# SSE delivery is sub-100 ms in practice; allow a generous wait for CI.
+sleep 0.8
+kill "$WATCH_PID" 2>/dev/null || true
+wait "$WATCH_PID" 2>/dev/null || true
+assert "watch received SSE smoke item" \
+  'grep -q "sse smoke test" "$WATCH_OUT"'
+assert "watch received second SSE item" \
+  'grep -q "sse second event" "$WATCH_OUT"'
+assert "watch emitted both events on separate lines" \
+  '[ "$(grep -c "sse " "$WATCH_OUT")" -ge 2 ]'
+rm -f "$WATCH_OUT"
+
 section "revoke (file-level — live server has the old config cached)"
 "$CLI" admin token revoke "$TOKEN_BOB" 2>/dev/null
 assert "config no longer has bob token" '! grep -q "$TOKEN_BOB" "$HOME/Library/Application Support/com.clipboarder.app/server.toml"'

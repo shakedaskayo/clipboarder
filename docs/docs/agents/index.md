@@ -237,7 +237,7 @@ The `--source` shows up in the GUI row meta — the user can see which agent add
 cb watch --kind url
 ```
 
-JSONL on stdout, indefinitely. Polls the DB every 500 ms.
+JSONL on stdout, indefinitely. Local mode polls the DB every 500 ms; in remote mode (`CLIPBOARDER_SERVER` set) it subscribes to the server's SSE stream and delivers events in ~5 ms.
 
 ## Performance
 

@@ -24,8 +24,8 @@ use anyhow::{Context, Result};
 use axum::{
     extract::{Path, Query, State},
     http::{header, HeaderMap, StatusCode},
-    response::{sse::Event, IntoResponse, Sse},
-    routing::{delete, get, post},
+    response::{sse::Event, Sse},
+    routing::{get, post},
     Json, Router,
 };
 use futures::stream::Stream;
@@ -33,7 +33,6 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio::sync::broadcast;
-use tokio::time::interval;
 
 use crate::classify;
 use crate::server_config::{ServerConfig, TokenEntry};
@@ -163,7 +162,7 @@ async fn items_list(
     let items = s
         .storage
         .lock()
-        .search(&q, &kind, qry.limit.max(1).min(10_000), &ns)
+        .search(&q, &kind, qry.limit.clamp(1, 10_000), &ns)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(items))
 }

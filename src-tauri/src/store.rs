@@ -1,9 +1,9 @@
 //! Abstract item store — the CLI talks to this, not directly to SQLite.
 //!
 //! Two implementations:
-//! - `LocalStore`  : wraps `Storage` (the in-process SQLite handle)
-//! - `RemoteStore` : speaks to a `clipboarder serve` HTTP backend with a
-//!                   bearer token, fully namespace-scoped on the server side
+//! - `LocalStore`: wraps `Storage` (the in-process SQLite handle)
+//! - `RemoteStore`: speaks to a `clipboarder serve` HTTP backend with a
+//!   bearer token, fully namespace-scoped on the server side
 //!
 //! The CLI picks one at runtime via `open_store()`:
 //!
@@ -12,6 +12,8 @@
 //!
 //! …with `~/.config/clipboarder/client.toml` as the fallback for either.
 
+use std::collections::VecDeque;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -42,6 +44,17 @@ pub trait ItemStore: Send + Sync {
     fn delete(&self, id: i64) -> Result<()>;
     fn clear(&self) -> Result<()>;
     fn stats(&self) -> Result<StatsView>;
+
+    /// Live stream of newly-captured items in this namespace, filtered by
+    /// `kind` ("all" for no filter). The returned iterator blocks until the
+    /// next item arrives (or the underlying transport closes).
+    ///
+    /// - `LocalStore`  → polls the SQLite store every 500 ms
+    /// - `RemoteStore` → reads `/v1/watch` Server-Sent Events
+    fn watch<'a>(
+        &'a self,
+        kind: &str,
+    ) -> Result<Box<dyn Iterator<Item = Result<ClipItem>> + Send + 'a>>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -215,12 +228,65 @@ impl ItemStore for LocalStore {
             namespace: self.namespace.clone(),
         })
     }
+
+    fn watch<'a>(
+        &'a self,
+        kind: &str,
+    ) -> Result<Box<dyn Iterator<Item = Result<ClipItem>> + Send + 'a>> {
+        // Seed `last_max` so we only emit items captured *after* this call.
+        let last_max = self
+            .search("", kind, 1)?
+            .first()
+            .map(|it| it.id)
+            .unwrap_or(0);
+        Ok(Box::new(LocalWatcher {
+            store: self,
+            kind: kind.to_string(),
+            last_max,
+            buffer: VecDeque::new(),
+        }))
+    }
+}
+
+struct LocalWatcher<'a> {
+    store: &'a LocalStore,
+    kind: String,
+    last_max: i64,
+    buffer: VecDeque<ClipItem>,
+}
+
+impl<'a> Iterator for LocalWatcher<'a> {
+    type Item = Result<ClipItem>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(it) = self.buffer.pop_front() {
+                return Some(Ok(it));
+            }
+            std::thread::sleep(Duration::from_millis(500));
+            let recent = match self.store.search("", &self.kind, 50) {
+                Ok(r) => r,
+                Err(e) => return Some(Err(e)),
+            };
+            let mut new_items: Vec<ClipItem> =
+                recent.into_iter().filter(|it| it.id > self.last_max).collect();
+            // Stream oldest-first so consumers see them in capture order.
+            new_items.sort_by_key(|it| it.id);
+            for it in &new_items {
+                self.last_max = self.last_max.max(it.id);
+            }
+            self.buffer.extend(new_items);
+        }
+    }
 }
 
 // ── RemoteStore ────────────────────────────────────────────────────────────
 
 pub struct RemoteStore {
     client: reqwest::blocking::Client,
+    /// Separate client without a per-request timeout — for `/v1/watch` SSE
+    /// which is intentionally long-lived.
+    stream_client: reqwest::blocking::Client,
     base: String,
     token: String,
     /// Cached from /v1/whoami. The server is the source of truth for which
@@ -234,6 +300,9 @@ impl RemoteStore {
             .timeout(Duration::from_secs(10))
             .build()
             .context("reqwest client")?;
+        let stream_client = reqwest::blocking::Client::builder()
+            .build()
+            .context("reqwest stream client")?;
         let base = base.trim_end_matches('/').to_string();
         // Verify the server is reachable + token is valid + read the actual
         // namespace from /v1/whoami. The server's mapping wins over any
@@ -261,7 +330,7 @@ impl RemoteStore {
                 anyhow::bail!("cannot reach {base}: {e}");
             }
         };
-        Ok(Self { client, base, token, namespace })
+        Ok(Self { client, stream_client, base, token, namespace })
     }
 
     fn url(&self, path: &str) -> String {
@@ -302,7 +371,7 @@ impl ItemStore for RemoteStore {
         if !resp.status().is_success() {
             anyhow::bail!("remote search: HTTP {}", resp.status());
         }
-        Ok(resp.json().context("decode items")?)
+        resp.json().context("decode items")
     }
 
     fn get(&self, id: i64) -> Result<Option<ClipItem>> {
@@ -328,7 +397,7 @@ impl ItemStore for RemoteStore {
         if !resp.status().is_success() {
             anyhow::bail!("remote upsert: HTTP {}", resp.status());
         }
-        Ok(resp.json().context("decode upsert reply")?)
+        resp.json().context("decode upsert reply")
     }
 
     fn set_pin(&self, id: i64, want_pinned: bool) -> Result<()> {
@@ -383,6 +452,100 @@ impl ItemStore for RemoteStore {
         if !resp.status().is_success() {
             anyhow::bail!("remote stats: HTTP {}", resp.status());
         }
-        Ok(resp.json().context("decode stats")?)
+        resp.json().context("decode stats")
+    }
+
+    fn watch<'a>(
+        &'a self,
+        kind: &str,
+    ) -> Result<Box<dyn Iterator<Item = Result<ClipItem>> + Send + 'a>> {
+        let resp = self
+            .stream_client
+            .get(self.url("/v1/watch"))
+            .bearer_auth(&self.token)
+            .header("Accept", "text/event-stream")
+            .send()
+            .context("GET /v1/watch")?;
+        if !resp.status().is_success() {
+            anyhow::bail!("remote watch: HTTP {}", resp.status());
+        }
+        Ok(Box::new(RemoteWatcher {
+            reader: BufReader::new(resp),
+            kind_filter: kind.to_string(),
+        }))
+    }
+}
+
+/// Minimal Server-Sent Events parser. The wire format we handle:
+///
+/// ```text
+/// event: item
+/// data: {"id":1,…}
+///
+/// event: ping
+/// data:
+///
+/// : keepalive
+/// ```
+///
+/// Per the SSE spec we accumulate `data:` lines for the current event and
+/// dispatch on the blank line. Multi-line data values are joined with `\n`.
+/// We ignore `event: ready` / `ping` and any `:` comment lines.
+struct RemoteWatcher {
+    reader: BufReader<reqwest::blocking::Response>,
+    /// `"all"` means no filter; otherwise the `ClipItem.kind` must match.
+    kind_filter: String,
+}
+
+impl Iterator for RemoteWatcher {
+    type Item = Result<ClipItem>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut event = String::new();
+        let mut data = String::new();
+        loop {
+            let mut line = String::new();
+            match self.reader.read_line(&mut line) {
+                Ok(0) => return None, // EOF — server closed the stream
+                Ok(_) => {}
+                Err(e) => {
+                    return Some(Err(anyhow::anyhow!("read SSE: {e}")));
+                }
+            }
+            // Strip the trailing newline (handle both \n and \r\n).
+            let trimmed = line.trim_end_matches('\n').trim_end_matches('\r');
+
+            if trimmed.is_empty() {
+                // Dispatch the accumulated event.
+                if event == "item" && !data.is_empty() {
+                    match serde_json::from_str::<ClipItem>(&data) {
+                        Ok(it) => {
+                            if self.kind_filter == "all" || it.kind == self.kind_filter {
+                                return Some(Ok(it));
+                            }
+                            // kind filter rejected this one — keep listening
+                        }
+                        Err(e) => {
+                            return Some(Err(anyhow::anyhow!("decode SSE item: {e}")));
+                        }
+                    }
+                }
+                // Reset buffers regardless (ping / ready / filtered).
+                event.clear();
+                data.clear();
+                continue;
+            }
+            if let Some(rest) = trimmed.strip_prefix("event:") {
+                event = rest.trim().to_string();
+            } else if let Some(rest) = trimmed.strip_prefix("data:") {
+                if !data.is_empty() {
+                    data.push('\n');
+                }
+                // Per spec a single leading space is optional padding.
+                data.push_str(rest.strip_prefix(' ').unwrap_or(rest));
+            }
+            // Lines starting with `:` are comments — ignore. Other field
+            // names (id:, retry:) aren't used by our server; ignore too.
+        }
     }
 }

@@ -180,17 +180,28 @@ Verified by [`scripts/test-server.sh`](https://github.com/shakedaskayo/clipboard
 - alice DELETE `/v1/items/{bob_id}` → 404
 - alice POST `/v1/clear` → bob's items untouched
 
-## Watch (CLI long-poll)
+## Watch (real-time SSE)
 
-`cb watch` polls the backend every 1.5 s when remote-mode is active and prints new items as JSON Lines. For agents that need true real-time, use the SSE endpoint directly:
+`cb watch` consumes the server's `/v1/watch` Server-Sent Events stream and prints each new item as a JSON line. End-to-end latency is ~5 ms in practice — no polling, no missed events, no per-tick database scans.
+
+```bash
+# Tail every new item in your namespace as JSON Lines:
+cb watch
+
+# Filter to one kind:
+cb watch --kind url
+```
+
+If you'd rather speak the wire protocol directly (e.g. from a language without a clipboarder client), the endpoint is:
 
 ```bash
 curl -N -H "Authorization: Bearer $CLIPBOARDER_TOKEN" "$CLIPBOARDER_SERVER/v1/watch"
 ```
 
+Each new item is delivered as `event: item` with a JSON `data:` payload. Keep-alive `event: ping` is emitted every 15 s so reverse proxies don't drop the connection.
+
 ## Roadmap
 
-- True SSE consumption in `cb watch` (currently long-polls)
 - Live config reload on `admin token revoke`
 - Argon2-hashed tokens at rest
 - Multi-token-per-namespace with last-used-at + revoke-by-fingerprint
