@@ -2592,7 +2592,7 @@
 <h3 id="8-tail-with-watch-for-ambient-awareness">8. Tail with <code>watch</code> for ambient awareness<a class="headerlink" href="#8-tail-with-watch-for-ambient-awareness" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>cb<span class="w"> </span>watch<span class="w"> </span>--kind<span class="w"> </span>url
 </span></code></pre></div>
-<p>JSONL on stdout, indefinitely. Polls the DB every 500 ms.</p>
+<p>JSONL on stdout, indefinitely. Local mode polls the DB every 500 ms; in remote mode (<code>CLIPBOARDER_SERVER</code> set) it subscribes to the server's SSE stream and delivers events in ~5 ms.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>Measured on M2 Pro, 10,000-item DB (<a href="https://github.com/shakedaskayo/clipboarder/blob/main/scripts/bench.sh">scripts/bench.sh</a>):</p>
 <table>

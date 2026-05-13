@@ -1734,10 +1734,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#watch-cli-long-poll" class="md-nav__link">
+  <a href="#watch-real-time-sse" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Watch (CLI long-poll)
+        Watch (real-time SSE)
       
     </span>
   </a>
@@ -2140,10 +2140,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#watch-cli-long-poll" class="md-nav__link">
+  <a href="#watch-real-time-sse" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Watch (CLI long-poll)
+        Watch (real-time SSE)
       
     </span>
   </a>
@@ -2392,13 +2392,20 @@
 <li>alice DELETE <code>/v1/items/{bob_id}</code> → 404</li>
 <li>alice POST <code>/v1/clear</code> → bob's items untouched</li>
 </ul>
-<h2 id="watch-cli-long-poll">Watch (CLI long-poll)<a class="headerlink" href="#watch-cli-long-poll" title="Permanent link">&para;</a></h2>
-<p><code>cb watch</code> polls the backend every 1.5 s when remote-mode is active and prints new items as JSON Lines. For agents that need true real-time, use the SSE endpoint directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>curl<span class="w"> </span>-N<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$CLIPBOARDER_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CLIPBOARDER_SERVER</span><span class="s2">/v1/watch&quot;</span>
+<h2 id="watch-real-time-sse">Watch (real-time SSE)<a class="headerlink" href="#watch-real-time-sse" title="Permanent link">&para;</a></h2>
+<p><code>cb watch</code> consumes the server's <code>/v1/watch</code> Server-Sent Events stream and prints each new item as a JSON line. End-to-end latency is ~5 ms in practice — no polling, no missed events, no per-tick database scans.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Tail every new item in your namespace as JSON Lines:</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>cb<span class="w"> </span>watch
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Filter to one kind:</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>cb<span class="w"> </span>watch<span class="w"> </span>--kind<span class="w"> </span>url
 </span></code></pre></div>
+<p>If you'd rather speak the wire protocol directly (e.g. from a language without a clipboarder client), the endpoint is:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-N<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$CLIPBOARDER_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CLIPBOARDER_SERVER</span><span class="s2">/v1/watch&quot;</span>
+</span></code></pre></div>
+<p>Each new item is delivered as <code>event: item</code> with a JSON <code>data:</code> payload. Keep-alive <code>event: ping</code> is emitted every 15 s so reverse proxies don't drop the connection.</p>
 <h2 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h2>
 <ul>
-<li>True SSE consumption in <code>cb watch</code> (currently long-polls)</li>
 <li>Live config reload on <code>admin token revoke</code></li>
 <li>Argon2-hashed tokens at rest</li>
 <li>Multi-token-per-namespace with last-used-at + revoke-by-fingerprint</li>
