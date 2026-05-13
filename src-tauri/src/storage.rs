@@ -368,6 +368,39 @@ impl Storage {
         )?;
         Ok(imgs)
     }
+
+    /// One row per namespace that has at least one item: total count, pinned
+    /// count, most recent activity. Used by the admin web UI.
+    pub fn namespace_stats(&self) -> Result<Vec<NamespaceStats>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT namespace,
+                    COUNT(*),
+                    SUM(CASE WHEN pinned = 1 THEN 1 ELSE 0 END),
+                    MAX(last_used_at)
+             FROM items
+             GROUP BY namespace
+             ORDER BY namespace",
+        )?;
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(NamespaceStats {
+                    namespace: r.get(0)?,
+                    items: r.get(1)?,
+                    pinned: r.get::<_, Option<i64>>(2)?.unwrap_or(0),
+                    last_activity: r.get(3)?,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(rows)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NamespaceStats {
+    pub namespace: String,
+    pub items: i64,
+    pub pinned: i64,
+    pub last_activity: Option<i64>,
 }
 
 fn row_to_item(r: &rusqlite::Row) -> rusqlite::Result<ClipItem> {

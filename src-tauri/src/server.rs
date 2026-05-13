@@ -14,6 +14,13 @@
 //!   GET    /v1/stats                   → {total, pinned, by_kind, ...}
 //!   GET    /v1/watch                   → SSE stream of new items
 //!
+//! Admin (require an admin = true token):
+//!   GET    /admin                      → web UI (static HTML+JS)
+//!   GET    /v1/admin/tokens            → list every token (no plaintext)
+//!   POST   /v1/admin/tokens            → create token (plaintext shown once)
+//!   DELETE /v1/admin/tokens/:fp        → revoke by fingerprint
+//!   GET    /v1/admin/namespaces        → namespaces with item counts
+//!
 //! Namespace is implicit — it's derived from the bearer token.
 
 use std::collections::HashMap;
@@ -37,8 +44,13 @@ use sha2::{Digest, Sha256};
 use tokio::sync::broadcast;
 
 use crate::classify;
-use crate::server_config::{now_ms, verify_token, ServerConfig, TokenEntry};
+use crate::server_config::{
+    fingerprint_of, generate_token, hash_token, now_ms, verify_token, ServerConfig, TokenEntry,
+};
 use crate::storage::{ClipItem, NewItem, Storage};
+
+/// Embedded single-page admin console. Served at `/admin`.
+const ADMIN_HTML: &str = include_str!("admin_ui.html");
 
 #[derive(Clone)]
 struct AppState {
@@ -108,6 +120,12 @@ pub async fn run(config_path: PathBuf, bind_override: Option<String>) -> Result<
         .route("/v1/clear", post(clear_history))
         .route("/v1/stats", get(stats))
         .route("/v1/watch", get(watch_sse))
+        // Admin (requires a token with admin = true)
+        .route("/admin", get(admin_html))
+        .route("/admin/", get(admin_html))
+        .route("/v1/admin/tokens", get(admin_tokens_list).post(admin_tokens_create))
+        .route("/v1/admin/tokens/:fp", axum::routing::delete(admin_tokens_revoke))
+        .route("/v1/admin/namespaces", get(admin_namespaces))
         .layer(tower_http::limit::RequestBodyLimitLayer::new(8 * 1024 * 1024))
         .with_state(state);
 
@@ -536,4 +554,217 @@ async fn watch_sse(
             .interval(Duration::from_secs(15))
             .text("keepalive"),
     ))
+}
+
+// ── admin (token-management web console + JSON API) ────────────────────────
+
+/// Auth gate for the admin surface. Returns 401 for missing/invalid bearer
+/// and 403 for valid bearers that lack the admin flag — keeping the two
+/// distinct helps clients tell "log in" from "you're not allowed."
+fn admin_auth(state: &AppState, headers: &HeaderMap) -> Result<AuthedNs, StatusCode> {
+    let authed = auth(state, headers)?;
+    if !authed.admin {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    Ok(authed)
+}
+
+async fn admin_html() -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
+        ADMIN_HTML,
+    )
+}
+
+#[derive(Serialize)]
+struct AdminTokenView {
+    fingerprint: String,
+    namespace: String,
+    label: Option<String>,
+    created_at: i64,
+    last_used_at: Option<i64>,
+    admin: bool,
+}
+
+async fn admin_tokens_list(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<Vec<AdminTokenView>>, StatusCode> {
+    admin_auth(&s, &headers)?;
+    let cfg = s.config.read();
+    let view: Vec<AdminTokenView> = cfg
+        .tokens
+        .iter()
+        .map(|t| AdminTokenView {
+            fingerprint: t.fingerprint.clone(),
+            namespace: t.namespace.clone(),
+            label: t.label.clone(),
+            created_at: t.created_at,
+            last_used_at: t.last_used_at,
+            admin: t.admin,
+        })
+        .collect();
+    Ok(Json(view))
+}
+
+#[derive(Deserialize)]
+struct AdminTokenCreateBody {
+    namespace: String,
+    #[serde(default)]
+    label: Option<String>,
+    #[serde(default)]
+    admin: bool,
+}
+
+#[derive(Serialize)]
+struct AdminTokenCreateReply {
+    /// Plaintext bearer — only returned right here, once.
+    bearer: String,
+    fingerprint: String,
+    namespace: String,
+    label: Option<String>,
+    created_at: i64,
+    admin: bool,
+}
+
+async fn admin_tokens_create(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<AdminTokenCreateBody>,
+) -> Result<Json<AdminTokenCreateReply>, StatusCode> {
+    admin_auth(&s, &headers)?;
+    if body.namespace.trim().is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Deduplicate on fingerprint. 62^8 collisions are astronomically rare but
+    // cheap to guard against.
+    let bearer = {
+        let cfg = s.config.read();
+        let existing_fps: std::collections::HashSet<&str> =
+            cfg.tokens.iter().map(|t| t.fingerprint.as_str()).collect();
+        loop {
+            let candidate = generate_token();
+            if !existing_fps.contains(fingerprint_of(&candidate).as_str()) {
+                break candidate;
+            }
+        }
+    };
+    let fingerprint = fingerprint_of(&bearer);
+    let hash = hash_token(&bearer).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let created_at = now_ms();
+    let entry = TokenEntry {
+        fingerprint: fingerprint.clone(),
+        hash,
+        namespace: body.namespace.clone(),
+        label: body.label.clone(),
+        created_at,
+        last_used_at: None,
+        admin: body.admin,
+        token: None,
+    };
+    {
+        let mut cfg = s.config.write();
+        cfg.tokens.push(entry);
+        let snapshot = cfg.clone();
+        drop(cfg);
+        snapshot
+            .save(&s.config_path)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+    Ok(Json(AdminTokenCreateReply {
+        bearer,
+        fingerprint,
+        namespace: body.namespace,
+        label: body.label,
+        created_at,
+        admin: body.admin,
+    }))
+}
+
+async fn admin_tokens_revoke(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Path(fp): Path<String>,
+) -> Result<StatusCode, StatusCode> {
+    admin_auth(&s, &headers)?;
+    let mut cfg = s.config.write();
+    let before = cfg.tokens.len();
+    cfg.tokens.retain(|t| t.fingerprint != fp);
+    if cfg.tokens.len() == before {
+        return Err(StatusCode::NOT_FOUND);
+    }
+    let snapshot = cfg.clone();
+    drop(cfg);
+    snapshot
+        .save(&s.config_path)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // The mtime watcher would notice this anyway, but explicitly clear the
+    // verified-bearer cache so the revoke is immediate from this process too.
+    s.auth_cache.write().clear();
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Serialize)]
+struct AdminNamespaceView {
+    namespace: String,
+    items: i64,
+    pinned: i64,
+    last_activity: Option<i64>,
+    token_count: usize,
+}
+
+async fn admin_namespaces(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<Vec<AdminNamespaceView>>, StatusCode> {
+    admin_auth(&s, &headers)?;
+
+    // Aggregate item counts + last-activity across every namespace that has
+    // either tokens or items. A namespace with tokens but no items still
+    // shows up (so admins see "empty" namespaces).
+    use std::collections::BTreeMap;
+    let mut by_ns: BTreeMap<String, AdminNamespaceView> = BTreeMap::new();
+
+    // Seed from tokens.
+    {
+        let cfg = s.config.read();
+        for t in &cfg.tokens {
+            let entry = by_ns
+                .entry(t.namespace.clone())
+                .or_insert_with(|| AdminNamespaceView {
+                    namespace: t.namespace.clone(),
+                    items: 0,
+                    pinned: 0,
+                    last_activity: None,
+                    token_count: 0,
+                });
+            entry.token_count += 1;
+        }
+    }
+
+    // Walk the items table once. The storage layer's search() filters by
+    // namespace, so we use a direct query instead.
+    let stats = s
+        .storage
+        .lock()
+        .namespace_stats()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    for row in stats {
+        let entry = by_ns
+            .entry(row.namespace.clone())
+            .or_insert_with(|| AdminNamespaceView {
+                namespace: row.namespace.clone(),
+                items: 0,
+                pinned: 0,
+                last_activity: None,
+                token_count: 0,
+            });
+        entry.items = row.items;
+        entry.pinned = row.pinned;
+        entry.last_activity = row.last_activity;
+    }
+
+    Ok(Json(by_ns.into_values().collect()))
 }

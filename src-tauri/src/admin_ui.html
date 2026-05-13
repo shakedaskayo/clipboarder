@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>clipboarder admin</title>
+<style>
+  :root {
+    --bg: #0a0c14;
+    --panel: #131726;
+    --panel-2: #1a1f33;
+    --border: #252b44;
+    --text: #e8eaf6;
+    --muted: #8389a8;
+    --grad-from: #606eff;
+    --grad-to: #8a50e6;
+    --green: #4ade80;
+    --red: #ef4444;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); margin: 0; }
+  body {
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+    min-height: 100vh;
+  }
+  a { color: var(--grad-from); }
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 24px;
+  }
+  header h1 {
+    margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em;
+    background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header .sub { color: var(--muted); font-size: 12px; margin-left: 12px; }
+  #auth-bar { display: flex; gap: 8px; align-items: center; }
+  #auth-bar input {
+    width: 280px;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 8px;
+    font: inherit; font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 12px;
+  }
+  #auth-bar input:focus { outline: none; border-color: var(--grad-from); }
+  #auth-status { font-size: 12px; color: var(--muted); }
+  #auth-status.ok { color: var(--green); }
+  #auth-status.err { color: var(--red); }
+
+  main { padding: 32px; max-width: 1100px; margin: 0 auto; }
+  section + section { margin-top: 36px; }
+  section header {
+    padding: 0 0 12px 0; border: none;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  section h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 12px; overflow: hidden; }
+  th, td { padding: 12px 16px; text-align: left; font-size: 13px; }
+  th {
+    background: var(--panel-2); color: var(--muted);
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-2); }
+  td.mono, .mono { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; }
+  td.muted, .muted { color: var(--muted); }
+  td.right { text-align: right; }
+  .pill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(96, 110, 255, 0.15); color: var(--grad-from);
+  }
+  .pill.admin { background: linear-gradient(135deg, var(--grad-from), var(--grad-to)); color: white; }
+
+  button {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 14px; cursor: pointer; font: inherit; font-size: 13px;
+    transition: all 0.15s;
+  }
+  button:hover { border-color: var(--grad-from); }
+  button.primary {
+    background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+    border-color: transparent; color: white; font-weight: 500;
+  }
+  button.primary:hover { filter: brightness(1.1); }
+  button.danger { color: var(--red); }
+  button.danger:hover { border-color: var(--red); background: rgba(239, 68, 68, 0.1); }
+  button.small { padding: 4px 10px; font-size: 12px; }
+
+  dialog {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 0; max-width: 460px; width: 90vw;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); }
+  dialog header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: block; }
+  dialog header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  dialog .body { padding: 20px 24px; }
+  dialog footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+  label.field { display: block; margin-bottom: 14px; }
+  label.field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  label.field input[type="text"] {
+    width: 100%;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 8px;
+    font: inherit; font-size: 13px;
+  }
+  label.field input:focus { outline: none; border-color: var(--grad-from); }
+  label.check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+
+  .bearer-reveal {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 12px;
+    background: var(--bg); border: 1px solid var(--warn);
+    padding: 12px; border-radius: 8px;
+    word-break: break-all;
+    margin-bottom: 12px;
+  }
+  .warn { color: var(--warn); font-size: 12px; margin-bottom: 12px; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; font-size: 13px; }
+
+  /* Locked overlay */
+  /* `display: flex` would otherwise win against the [hidden] attribute. */
+  [hidden] { display: none !important; }
+  #locked {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 32px; gap: 16px; color: var(--muted);
+  }
+  #locked .hint { font-size: 13px; max-width: 480px; text-align: center; line-height: 1.6; }
+  #locked code { background: var(--panel); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>clipboarder admin</h1>
+    <span class="sub" id="server-info">—</span>
+  </div>
+  <div id="auth-bar">
+    <input type="password" id="token-input" placeholder="Admin token (tk_…)" autocomplete="off" spellcheck="false">
+    <button id="unlock-btn" class="primary">Unlock</button>
+    <button id="lock-btn" hidden>Lock</button>
+    <span id="auth-status"></span>
+  </div>
+</header>
+
+<main>
+  <div id="locked">
+    <div>🔒 Paste an admin token above to continue.</div>
+    <div class="hint">
+      Generate one on the server host with
+      <code>clipboarder admin token create --admin --label "web ui"</code>.
+      Non-admin tokens can't reach this page.
+    </div>
+  </div>
+
+  <div id="content" hidden>
+    <section id="ns-section">
+      <header><h2>Namespaces</h2></header>
+      <table id="ns-table">
+        <thead><tr><th>Namespace</th><th class="right">Items</th><th class="right">Pinned</th><th class="right">Tokens</th><th>Last activity</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="tokens-section">
+      <header>
+        <h2>Tokens</h2>
+        <button id="new-token-btn" class="primary">+ New token</button>
+      </header>
+      <table id="tokens-table">
+        <thead><tr><th>Fingerprint</th><th>Namespace</th><th>Label</th><th>Last used</th><th>Admin</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<dialog id="new-token-dialog">
+  <header><h3>Create token</h3></header>
+  <div class="body">
+    <label class="field">
+      <span>Namespace</span>
+      <input type="text" id="nt-namespace" placeholder="alice" spellcheck="false">
+    </label>
+    <label class="field">
+      <span>Label (optional)</span>
+      <input type="text" id="nt-label" placeholder="Alice's MacBook">
+    </label>
+    <label class="check">
+      <input type="checkbox" id="nt-admin">
+      <span>Admin (can manage tokens + namespaces via this UI)</span>
+    </label>
+  </div>
+  <footer>
+    <button id="nt-cancel">Cancel</button>
+    <button id="nt-create" class="primary">Create</button>
+  </footer>
+</dialog>
+
+<dialog id="reveal-dialog">
+  <header><h3>New token</h3></header>
+  <div class="body">
+    <div class="warn">⚠ This is the only time you'll see the plaintext bearer. Copy it now — it's argon2-hashed at rest and can't be recovered.</div>
+    <div class="bearer-reveal" id="rv-bearer"></div>
+    <button id="rv-copy">Copy to clipboard</button>
+    <span id="rv-copy-status" class="muted" style="margin-left: 8px; font-size: 12px;"></span>
+  </div>
+  <footer>
+    <button id="rv-done" class="primary">I've saved it</button>
+  </footer>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = "clipboarder.adminToken";
+  let token = sessionStorage.getItem(STORAGE_KEY) || "";
+
+  // ── api ────────────────────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    const res = await fetch(path, {
+      ...opts,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(opts.headers || {}),
+      },
+    });
+    if (res.status === 401) throw new Error("invalid token");
+    if (res.status === 403) throw new Error("token lacks admin privileges");
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    if (res.status === 204) return null;
+    const ct = res.headers.get("content-type") || "";
+    return ct.includes("json") ? res.json() : res.text();
+  }
+
+  // ── auth flow ──────────────────────────────────────────────────────────
+  async function unlock(t) {
+    token = t;
+    try {
+      const me = await api("/v1/whoami");
+      if (!me.admin) {
+        setStatus("token isn't admin", "err");
+        token = ""; return false;
+      }
+      sessionStorage.setItem(STORAGE_KEY, token);
+      $("locked").hidden = true;
+      $("content").hidden = false;
+      $("unlock-btn").hidden = true;
+      $("token-input").hidden = true;
+      $("lock-btn").hidden = false;
+      $("server-info").textContent = `${me.namespace} · ${me.fingerprint}`;
+      setStatus("unlocked", "ok");
+      await refresh();
+      return true;
+    } catch (e) {
+      setStatus(e.message, "err");
+      token = ""; sessionStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
+  }
+
+  function lock() {
+    sessionStorage.removeItem(STORAGE_KEY);
+    token = "";
+    $("content").hidden = true;
+    $("locked").hidden = false;
+    $("unlock-btn").hidden = false;
+    $("token-input").hidden = false;
+    $("token-input").value = "";
+    $("lock-btn").hidden = true;
+    setStatus("");
+  }
+
+  function setStatus(msg, cls) {
+    const s = $("auth-status");
+    s.textContent = msg;
+    s.className = cls || "";
+  }
+
+  $("unlock-btn").onclick = () => unlock($("token-input").value.trim());
+  $("token-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") unlock($("token-input").value.trim());
+  });
+  $("lock-btn").onclick = lock;
+
+  // ── render ─────────────────────────────────────────────────────────────
+  async function refresh() {
+    const [tokens, namespaces] = await Promise.all([
+      api("/v1/admin/tokens"),
+      api("/v1/admin/namespaces"),
+    ]);
+    renderNamespaces(namespaces);
+    renderTokens(tokens);
+  }
+
+  function renderNamespaces(rows) {
+    const tbody = $("ns-table").querySelector("tbody");
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No namespaces yet — create a token to claim one.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td class="mono">${esc(r.namespace)}</td>
+        <td class="right">${r.items}</td>
+        <td class="right muted">${r.pinned}</td>
+        <td class="right muted">${r.token_count}</td>
+        <td class="muted">${r.last_activity ? ago(Date.now() - r.last_activity) : "—"}</td>
+      </tr>`).join("");
+  }
+
+  function renderTokens(rows) {
+    const tbody = $("tokens-table").querySelector("tbody");
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">No tokens — create one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td class="mono">${esc(r.fingerprint)}</td>
+        <td class="mono">${esc(r.namespace)}</td>
+        <td>${esc(r.label || "")}</td>
+        <td class="muted">${r.last_used_at ? ago(Date.now() - r.last_used_at) : "never"}</td>
+        <td>${r.admin ? '<span class="pill admin">admin</span>' : ''}</td>
+        <td class="right">
+          <button class="small danger" data-revoke="${esc(r.fingerprint)}">Revoke</button>
+        </td>
+      </tr>`).join("");
+    tbody.querySelectorAll("[data-revoke]").forEach(btn => {
+      btn.onclick = () => revoke(btn.dataset.revoke);
+    });
+  }
+
+  function ago(ms) {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c]);
+  }
+
+  // ── create token dialog ────────────────────────────────────────────────
+  $("new-token-btn").onclick = () => {
+    $("nt-namespace").value = "";
+    $("nt-label").value = "";
+    $("nt-admin").checked = false;
+    $("new-token-dialog").showModal();
+    setTimeout(() => $("nt-namespace").focus(), 50);
+  };
+  $("nt-cancel").onclick = () => $("new-token-dialog").close();
+  $("nt-create").onclick = async () => {
+    const namespace = $("nt-namespace").value.trim();
+    if (!namespace) { $("nt-namespace").focus(); return; }
+    const label = $("nt-label").value.trim() || null;
+    const admin = $("nt-admin").checked;
+    try {
+      const reply = await api("/v1/admin/tokens", {
+        method: "POST",
+        body: JSON.stringify({ namespace, label, admin }),
+      });
+      $("new-token-dialog").close();
+      revealBearer(reply.bearer);
+      await refresh();
+    } catch (e) {
+      alert("Create failed: " + e.message);
+    }
+  };
+
+  // ── reveal-once dialog ─────────────────────────────────────────────────
+  function revealBearer(bearer) {
+    $("rv-bearer").textContent = bearer;
+    $("rv-copy-status").textContent = "";
+    $("reveal-dialog").showModal();
+  }
+  $("rv-copy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText($("rv-bearer").textContent);
+      $("rv-copy-status").textContent = "copied ✓";
+    } catch {
+      $("rv-copy-status").textContent = "(clipboard access denied — select + copy manually)";
+    }
+  };
+  $("rv-done").onclick = () => $("reveal-dialog").close();
+
+  // ── revoke ─────────────────────────────────────────────────────────────
+  async function revoke(fp) {
+    if (!confirm(`Revoke ${fp}?\nClients using this token will get 401 within ~2 s.`)) return;
+    try {
+      await api(`/v1/admin/tokens/${encodeURIComponent(fp)}`, { method: "DELETE" });
+      await refresh();
+    } catch (e) {
+      alert("Revoke failed: " + e.message);
+    }
+  }
+
+  // ── boot ───────────────────────────────────────────────────────────────
+  if (token) {
+    unlock(token);
+  } else {
+    $("token-input").focus();
+  }
+})();
+</script>
+</body>
+</html>

@@ -165,6 +165,53 @@ assert "watch emitted both events on separate lines" \
   '[ "$(grep -c "sse " "$WATCH_OUT")" -ge 2 ]'
 rm -f "$WATCH_OUT"
 
+section "admin web UI"
+# /admin returns the static HTML for anyone (no auth on the page itself —
+# the JS asks for the bearer on the client side).
+assert "GET /admin → 200 + HTML" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" "$BASE/admin")" = "200" ]'
+assert "/admin payload looks like the console" \
+  'curl -s "$BASE/admin" | grep -q "clipboarder admin"'
+# A regular (non-admin) token is rejected with 403 on every admin endpoint.
+assert "regular token → 403 on /v1/admin/tokens" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/admin/tokens")" = "403" ]'
+# Mint an admin token via the CLI; live reloader picks it up within ~2 s.
+TOKEN_ADMIN=$("$CLI" admin token create --namespace adminns --label "ci admin" --admin 2>/dev/null)
+# Wait for reload (server polls every 2s).
+adm_ok=""
+for _ in 1 2 3 4 5; do
+  sleep 1
+  code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/v1/admin/tokens")
+  if [ "$code" = "200" ]; then adm_ok="yes"; break; fi
+done
+assert "admin token created + recognized after reload" '[ "$adm_ok" = "yes" ]'
+N_TOKENS=$(curl -s -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/v1/admin/tokens" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+assert "admin sees all tokens"        '[ "$N_TOKENS" -ge 3 ]'
+N_NS=$(curl -s -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/v1/admin/namespaces" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+assert "admin sees ≥ alice + bob + adminns namespaces" '[ "$N_NS" -ge 2 ]'
+# Create a token via the admin REST API; check the plaintext is returned.
+NEW_BODY='{"namespace":"carol","label":"created via admin api","admin":false}'
+NEW_REPLY=$(curl -s -X POST -H "Authorization: Bearer $TOKEN_ADMIN" -H "Content-Type: application/json" -d "$NEW_BODY" "$BASE/v1/admin/tokens")
+NEW_BEARER=$(echo "$NEW_REPLY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["bearer"])')
+NEW_FP=$(echo "$NEW_REPLY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["fingerprint"])')
+assert "POST /v1/admin/tokens returned a tk_ bearer" '[[ "$NEW_BEARER" == tk_* ]]'
+# The new token must work after a brief reload window.
+new_ok=""
+for _ in 1 2 3 4 5; do
+  sleep 1
+  code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $NEW_BEARER" "$BASE/v1/whoami")
+  if [ "$code" = "200" ]; then new_ok="yes"; break; fi
+done
+assert "freshly-minted token authenticates (200 on whoami)" '[ "$new_ok" = "yes" ]'
+# Revoke it via DELETE /v1/admin/tokens/:fp; should stop working.
+assert "DELETE /v1/admin/tokens/:fp → 204" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" -X DELETE -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/v1/admin/tokens/$NEW_FP")" = "204" ]'
+# auth_cache is cleared on revoke so this is immediate.
+assert "revoked token → 401" \
+  '[ "$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $NEW_BEARER" "$BASE/v1/whoami")" = "401" ]'
+DELETE_404=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/v1/admin/tokens/tk_nope000000")
+assert "DELETE unknown fingerprint → 404" '[ "$DELETE_404" = "404" ]'
+
 section "image endpoint"
 # A minimal 67-byte 1x1 PNG. Sidestepping POST /v1/items because that route
 # only ingests text — image-kind rows are normally written by the GUI watcher

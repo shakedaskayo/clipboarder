@@ -103,6 +103,40 @@ clipboarder admin token revoke tk_aB3xQ9XY
 
 Revocation rewrites `server.toml` atomically and the running `clipboarder serve` picks it up within ~2 s via mtime polling — no restart needed.
 
+## Web admin console
+
+The server bundles a single-page admin console at `/admin` for managing tokens and namespaces from a browser.
+
+```bash
+# 1. Mint an admin token (these gate /admin and /v1/admin/*).
+clipboarder admin token create --admin --label "web ui"
+# → tk_XXXXXXXXXXX… — copy it
+
+# 2. Visit the server in a browser.
+open http://127.0.0.1:7474/admin
+# Paste the token to unlock.
+```
+
+What you can do from the UI:
+
+- See every namespace with item count, pinned count, token count, and last activity
+- See every token with fingerprint, namespace, label, last-used time, admin flag
+- Create new tokens (the plaintext bearer is shown exactly once — copy it then)
+- Revoke any token by clicking **Revoke**
+
+The page is served from an embedded HTML asset — no separate web build, no JS framework, no static-file dependencies. The same `clipboarder serve` binary that runs the REST API serves the console.
+
+JSON API for the same surface (each endpoint requires a token with `admin = true`):
+
+| Method | Path | Body | Returns |
+|--------|------|------|---------|
+| `GET`    | `/v1/admin/tokens`         | — | array of `{fingerprint, namespace, label, created_at, last_used_at, admin}` |
+| `POST`   | `/v1/admin/tokens`         | `{namespace, label?, admin?}` | `{bearer, fingerprint, namespace, label, created_at, admin}` — bearer plaintext is only returned here |
+| `DELETE` | `/v1/admin/tokens/{fp}`    | — | 204 / 404 |
+| `GET`    | `/v1/admin/namespaces`     | — | array of `{namespace, items, pinned, last_activity, token_count}` |
+
+A non-admin bearer gets `403` on every admin endpoint (vs `401` for no/invalid token), so clients can distinguish "log in" from "not authorized."
+
 ## Deployment
 
 The server doesn't terminate TLS itself. Run it bound to `127.0.0.1` and front it with one of:
@@ -212,4 +246,4 @@ Each new item is delivered as `event: item` with a JSON `data:` payload. Keep-al
 
 ## Roadmap
 
-- Web UI for token + namespace management
+That's a wrap on the original v0.1 server roadmap. Future work (no specific plan yet): per-item TTLs, cross-namespace search for admin tokens, S3-backed image storage, signed-cookie auth for the web UI.
