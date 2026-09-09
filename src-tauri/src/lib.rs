@@ -66,6 +66,15 @@ pub struct AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Log panics from every thread instead of letting them disappear. A
+    // panic in a Tauri command thread or the clipboard watcher otherwise
+    // leaves the app running with the tray icon alive but the feature dead.
+    let default_panic = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        eprintln!("[clipboarder] PANIC: {info}");
+        default_panic(info);
+    }));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
@@ -135,7 +144,9 @@ pub fn run() {
             build_tray(&app_handle)?;
 
             // macOS panel-style window
-            let win = app.get_webview_window("main").unwrap();
+            let win = app
+                .get_webview_window("main")
+                .ok_or_else(|| anyhow!("main window not registered"))?;
             #[cfg(target_os = "macos")]
             macos::configure_window(&win);
 
@@ -263,31 +274,44 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 }
 
 fn toggle_window(app: &AppHandle) {
-    if let Some(win) = app.get_webview_window("main") {
-        match win.is_visible() {
-            Ok(true) => {
-                let _ = win.hide();
-            }
-            _ => {
-                capture_prev_frontmost(app);
-                let _ = win.center();
-                let _ = win.show();
-                let _ = win.set_focus();
-                let _ = app.emit("window:shown", ());
-            }
-        }
+    let Some(win) = app.get_webview_window("main") else { return; };
+    // is_visible() can disagree with what the user sees: [NSApp hide:],
+    // setHidesOnDeactivate, and Space transitions all leave NSWindow's
+    // visibility flag in states that don't match the user's perception.
+    // Only treat the window as "should hide" if it is *both* visible and
+    // clipboarder is the frontmost app — otherwise the hotkey should
+    // summon the window back, not silently hide an already-hidden one.
+    let visible = win.is_visible().unwrap_or(false);
+    let should_hide = visible && is_clipboarder_frontmost();
+    if should_hide {
+        let _ = win.hide();
+    } else {
+        show_window(app);
     }
 }
 
 fn show_window(app: &AppHandle) {
-    if let Some(win) = app.get_webview_window("main") {
-        capture_prev_frontmost(app);
-        let _ = win.center();
-        let _ = win.show();
-        let _ = win.set_focus();
-        let _ = app.emit("window:shown", ());
-    }
+    let Some(win) = app.get_webview_window("main") else { return; };
+    capture_prev_frontmost(app);
+    let _ = win.center();
+    let _ = win.show();
+    let _ = win.set_focus();
+    // set_focus() calls makeKeyAndOrderFront: but does not always activate
+    // the *application* on macOS 15 when the window is floating +
+    // hidesOnDeactivate — keystrokes can still go to the previously-active
+    // app. Explicitly activate to guarantee focus lands here.
+    #[cfg(target_os = "macos")]
+    macos::activate_self();
+    let _ = app.emit("window:shown", ());
 }
+
+#[cfg(target_os = "macos")]
+fn is_clipboarder_frontmost() -> bool {
+    macos::frontmost_bundle_id().as_deref() == Some("com.clipboarder.app")
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_clipboarder_frontmost() -> bool { true }
 
 /// Snapshot the PID of the frontmost app *before* we activate clipboarder,
 /// so paste-back has something concrete to re-activate. Skipped if the

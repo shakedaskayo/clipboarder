@@ -337,7 +337,7 @@ impl Storage {
              FROM items WHERE id = ?1 AND namespace = ?2",
         )?;
         let item = stmt
-            .query_row(params![id, namespace], |r| Ok(row_to_item(r).unwrap()))
+            .query_row(params![id, namespace], row_to_item)
             .optional()?;
         Ok(item)
     }

@@ -62,6 +62,21 @@ pub fn hide_app() {
     }
 }
 
+/// Force clipboarder to the foreground. `NSWindow.makeKeyAndOrderFront:`
+/// alone (which is what `win.set_focus()` calls into) does not always
+/// activate the *application* on macOS 15 when the window is floating +
+/// hidesOnDeactivate — the window appears but keystrokes still go to the
+/// previously-frontmost app. Calling activateIgnoringOtherApps: forces the
+/// activation through.
+pub fn activate_self() {
+    unsafe {
+        let app: id = msg_send![class!(NSApplication), sharedApplication];
+        if app == nil { return; }
+        let yes: objc::runtime::BOOL = objc::runtime::YES;
+        let _: () = msg_send![app, activateIgnoringOtherApps: yes];
+    }
+}
+
 /// Returns the PID of the frontmost application. We capture this at the
 /// instant the global hotkey fires (before clipboarder activates) so that
 /// paste-back can explicitly re-activate that exact app — `[NSApp hide:]`

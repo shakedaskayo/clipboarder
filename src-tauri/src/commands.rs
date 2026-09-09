@@ -63,8 +63,21 @@ pub fn paste_item(app: AppHandle, state: State<AppState>, id: i64) -> CmdResult<
     // Activating the snapshotted PID directly is what makes the paste land
     // in the user's previous app.
     #[cfg(target_os = "macos")]
-    if let Some(pid) = prev_pid {
-        let _ = crate::macos::activate_app_by_pid(pid);
+    match prev_pid {
+        Some(pid) => {
+            let _ = crate::macos::activate_app_by_pid(pid);
+        }
+        None => {
+            // No snapshot to activate. If clipboarder is still frontmost
+            // (tray-click path, or [NSApp hide:] didn't hand focus back),
+            // synthesizing ⌘V would paste into our own webview. The
+            // clipboard content is already set, so the user can ⌘V into
+            // any app manually.
+            if crate::macos::frontmost_bundle_id().as_deref() == Some("com.clipboarder.app") {
+                eprintln!("[clipboarder] skipping paste-back: no prev_pid, clipboarder still frontmost");
+                return Ok(());
+            }
+        }
     }
 
     paste::simulate_paste().map_err(err)?;
