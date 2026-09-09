@@ -2,6 +2,24 @@ mod app_icons;
 pub mod classify;
 mod clipboard;
 mod commands;
+pub mod dbkey;
+
+/// Serializes tests that set process-wide environment variables.
+///
+/// `cargo test` runs the tests in one binary on multiple threads, so two
+/// tests that both drive `CLIPBOARDER_DB_KEY` will otherwise clobber each
+/// other non-deterministically. Every such test takes this lock first.
+#[cfg(test)]
+pub(crate) mod testenv {
+    use once_cell::sync::Lazy;
+    use parking_lot::{Mutex, MutexGuard};
+
+    static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+    pub fn lock() -> MutexGuard<'static, ()> {
+        LOCK.lock()
+    }
+}
 pub mod cli;
 mod paste;
 pub mod secrets;

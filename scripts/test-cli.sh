@@ -9,6 +9,11 @@
 
 set -euo pipefail
 
+# The database is SQLCipher-encrypted; supply the key explicitly so the suite
+# never depends on a login keychain, which on a CI runner may be locked or
+# absent. Any 64 hex characters will do — the DB is thrown away with TMPHOME.
+export CLIPBOARDER_DB_KEY=${CLIPBOARDER_DB_KEY:-00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff}
+
 CLI=${CLIPBOARDER_BIN:-"$(cd "$(dirname "$0")/.." && pwd)/src-tauri/target/release/clipboarder"}
 TMPHOME=$(mktemp -d -t clipboarder-test.XXXXXX)
 trap 'rm -rf "$TMPHOME"' EXIT

@@ -74,6 +74,14 @@ pub struct UpsertRequest {
     pub meta: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_app: Option<String>,
+    /// Filesystem path of an image-kind item.
+    ///
+    /// `#[serde(skip)]` is deliberate: this never crosses the wire in either
+    /// direction. A path supplied by a remote client would let that client
+    /// point `GET /v1/items/:id/image` at any file the server process can
+    /// read. Only `LocalStore` honors it.
+    #[serde(skip)]
+    pub image_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,6 +138,43 @@ impl LocalStore {
     /// pruning called by the GUI's startup path). The CLI doesn't use this.
     #[allow(dead_code)]
     pub fn raw_storage(&self) -> &Mutex<Storage> { &self.storage }
+
+    /// Insert an image-kind row pointing at an existing file on disk.
+    ///
+    /// Mirrors what the GUI watcher records for a copied image: empty
+    /// content, the PNG bytes' digest as the dedup hash, and the path in
+    /// `image_path` so `fetch_image` can serve it.
+    fn upsert_image(&self, path: &str, source_app: Option<&str>) -> Result<UpsertReply> {
+        let bytes = std::fs::read(path)
+            .with_context(|| format!("read image {path}"))?;
+        if bytes.is_empty() {
+            anyhow::bail!("upsert: {path} is empty");
+        }
+        let mut h = Sha256::new();
+        h.update(&bytes);
+        let hash: String = h.finalize().iter().map(|b| format!("{b:02x}")).collect();
+        let preview = std::path::Path::new(path)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "image".into());
+
+        let mut db = self.storage.lock();
+        let (id, inserted) = db.upsert(
+            &NewItem {
+                kind: classify::Kind::Image,
+                content: "",
+                preview: &preview,
+                meta: None,
+                source_app,
+                source_app_id: None,
+                image_path: Some(path),
+                content_hash: &hash,
+                size: bytes.len() as i64,
+            },
+            &self.namespace,
+        )?;
+        Ok(UpsertReply { id, inserted, kind: "image".into() })
+    }
 }
 
 impl ItemStore for LocalStore {
@@ -150,6 +195,9 @@ impl ItemStore for LocalStore {
     }
 
     fn upsert(&self, req: &UpsertRequest) -> Result<UpsertReply> {
+        if let Some(path) = req.image_path.as_deref() {
+            return self.upsert_image(path, req.source_app.as_deref());
+        }
         if req.content.is_empty() {
             anyhow::bail!("upsert: empty content");
         }
@@ -406,6 +454,13 @@ impl ItemStore for RemoteStore {
     }
 
     fn upsert(&self, req: &UpsertRequest) -> Result<UpsertReply> {
+        if req.image_path.is_some() {
+            anyhow::bail!(
+                "--image writes a local file path into the database, which only \
+                 means something on the machine holding the file; it is not \
+                 supported against a remote server"
+            );
+        }
         let resp = self
             .req(reqwest::Method::POST, "/v1/items")
             .json(req)

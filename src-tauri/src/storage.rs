@@ -8,7 +8,7 @@
 use std::path::Path;
 use std::time::Instant;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
@@ -121,12 +121,87 @@ pub struct NewItem<'a> {
     pub size: i64,
 }
 
+fn sidecar(path: &Path, suffix: &str) -> std::path::PathBuf {
+    let mut s = path.as_os_str().to_os_string();
+    s.push(suffix);
+    std::path::PathBuf::from(s)
+}
+
+/// Convert a pre-encryption database in place.
+///
+/// Detection is by attempt: a SQLCipher build reading a plaintext file fails
+/// at the header, and a plaintext build never got here. If the file opens
+/// *without* a key it is the old format, so we export it into a keyed copy via
+/// `sqlcipher_export()` and swap the copy in. A file that is already encrypted,
+/// or does not exist yet, is left alone.
+fn migrate_plaintext_to_encrypted(path: &Path, key: &str) -> Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+    let plain = Connection::open(path)?;
+    if plain
+        .query_row("SELECT count(*) FROM sqlite_master", [], |_| Ok(()))
+        .is_err()
+    {
+        // Not readable unkeyed: already encrypted (or corrupt, which the
+        // keyed open below will report properly).
+        return Ok(());
+    }
+
+    let encrypted = sidecar(path, ".migrating");
+    let _ = std::fs::remove_file(&encrypted);
+    // Fold the WAL back in first so the export sees every committed row.
+    let _ = plain.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+    plain.execute_batch(&format!(
+        "ATTACH DATABASE '{}' AS encrypted KEY \"x'{key}'\";
+         SELECT sqlcipher_export('encrypted');
+         DETACH DATABASE encrypted;",
+        encrypted.display()
+    ))
+    .context("export the existing database into an encrypted copy")?;
+    drop(plain);
+
+    std::fs::rename(&encrypted, path).context("swap in the encrypted database")?;
+    // The old WAL/SHM belong to the plaintext file and would be replayed over
+    // the new one. They hold plaintext rows, so remove rather than keep them.
+    let _ = std::fs::remove_file(sidecar(path, "-wal"));
+    let _ = std::fs::remove_file(sidecar(path, "-shm"));
+    let _ = crate::dbkey::restrict(path);
+    eprintln!("clipboarder: migrated the clipboard database to an encrypted store");
+    Ok(())
+}
+
 impl Storage {
     pub fn open(path: &Path) -> Result<Self> {
+        let data_dir = path.parent().unwrap_or_else(|| Path::new("."));
+        let key = crate::dbkey::get_or_create(data_dir)
+            .context("resolve the clipboarder database key")?;
+
+        // A database written by an older, unencrypted build has to be
+        // converted before it can be opened with a key.
+        migrate_plaintext_to_encrypted(path, &key)?;
+
         let conn = Connection::open(path)?;
+        // PRAGMA key must be the first statement on the connection — SQLCipher
+        // cannot read the header until it is set. `x'..'` is the raw-key form,
+        // which skips PBKDF2 (we already hold 32 CSPRNG bytes, not a password).
+        conn.execute_batch(&format!("PRAGMA key = \"x'{key}'\";"))
+            .context("apply the database key")?;
+        conn.query_row("SELECT count(*) FROM sqlite_master", [], |_| Ok(()))
+            .context(
+                "could not decrypt the clipboarder database with the current key \
+                 — if the keychain entry or db.key was lost, the history is not \
+                 recoverable and the file must be moved aside",
+            )?;
+
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "synchronous", "NORMAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
+        // Overwrite freed pages instead of leaving the old bytes in the
+        // freelist. Without this a deleted row stays readable in the file
+        // until some later write happens to reuse that page — so `cb delete`
+        // on a leaked API key does not actually remove it from disk.
+        conn.pragma_update(None, "secure_delete", "ON")?;
 
         // Migrations BEFORE the schema batch. SCHEMA's namespace-scoped
         // indexes reference the `namespace` column, so on a DB created before
@@ -145,7 +220,23 @@ impl Storage {
 
         conn.execute_batch(SCHEMA)?;
 
+        // The database, its sidecars, and the key must not be readable by
+        // other local accounts.
+        for p in [path.to_path_buf(),
+                  sidecar(path, "-wal"),
+                  sidecar(path, "-shm")] {
+            let _ = crate::dbkey::restrict(&p);
+        }
+
         Ok(Self { conn })
+    }
+
+    /// Reclaim and zero any pages left over from before `secure_delete` was
+    /// enabled. Callers use this after a bulk delete; it rewrites the whole
+    /// file, so it is not on the per-row delete path.
+    pub fn vacuum(&self) -> Result<()> {
+        self.conn.execute_batch("VACUUM")?;
+        Ok(())
     }
 
     /// Insert or refresh an item (dedup by (namespace, content_hash)). Returns the
@@ -437,4 +528,182 @@ fn build_match_expr(q: &str) -> String {
         return format!("\"{}\"", q.replace('"', "\"\""));
     }
     parts.join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every test drives `Storage::open` through `CLIPBOARDER_DB_KEY` so it
+    /// never touches the developer's real login keychain.
+    const TEST_KEY: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    fn scratch() -> std::path::PathBuf {
+        let mut p = std::env::temp_dir();
+        p.push(format!("clipboarder-storage-{}", rand::random::<u64>()));
+        std::fs::create_dir_all(&p).unwrap();
+        p
+    }
+
+    fn item<'a>(content: &'a str, hash: &'a str) -> NewItem<'a> {
+        NewItem {
+            kind: Kind::Text,
+            content,
+            preview: content,
+            meta: None,
+            source_app: None,
+            source_app_id: None,
+            image_path: None,
+            content_hash: hash,
+            size: content.len() as i64,
+        }
+    }
+
+    /// The header of a plaintext SQLite file. SQLCipher encrypts from byte 0,
+    /// so its absence is what "the file is encrypted" actually means on disk.
+    const SQLITE_MAGIC: &[u8] = b"SQLite format 3\0";
+
+    fn starts_with_sqlite_magic(path: &Path) -> bool {
+        let bytes = std::fs::read(path).unwrap();
+        bytes.starts_with(SQLITE_MAGIC)
+    }
+
+    #[test]
+    fn fresh_database_is_encrypted_on_disk() {
+        let _env = crate::testenv::lock();
+        let dir = scratch();
+        let db = dir.join("clipboarder.sqlite");
+        std::env::set_var("CLIPBOARDER_DB_KEY", TEST_KEY);
+        {
+            let mut s = Storage::open(&db).expect("open fresh db");
+            s.upsert(&item("hello", "h1"), DEFAULT_NAMESPACE).unwrap();
+        }
+        std::env::remove_var("CLIPBOARDER_DB_KEY");
+
+        assert!(
+            !starts_with_sqlite_magic(&db),
+            "a fresh database must not be a readable plaintext SQLite file"
+        );
+        let raw = std::fs::read(&db).unwrap();
+        assert!(
+            !raw.windows(5).any(|w| w == b"hello"),
+            "row content must not be readable in the raw file"
+        );
+    }
+
+    #[test]
+    fn opening_without_the_key_fails() {
+        let _env = crate::testenv::lock();
+        let dir = scratch();
+        let db = dir.join("clipboarder.sqlite");
+        std::env::set_var("CLIPBOARDER_DB_KEY", TEST_KEY);
+        {
+            let mut s = Storage::open(&db).expect("open fresh db");
+            s.upsert(&item("secret-value", "h1"), DEFAULT_NAMESPACE)
+                .unwrap();
+        }
+        std::env::remove_var("CLIPBOARDER_DB_KEY");
+
+        // A plain rusqlite connection with no key must not be able to read it.
+        let conn = Connection::open(&db).unwrap();
+        assert!(
+            conn.query_row("SELECT count(*) FROM sqlite_master", [], |_| Ok(()))
+                .is_err(),
+            "the database must be unreadable without the key"
+        );
+    }
+
+    #[test]
+    fn plaintext_database_is_migrated_and_rows_survive() {
+        let _env = crate::testenv::lock();
+        let dir = scratch();
+        let db = dir.join("clipboarder.sqlite");
+
+        // Build a pre-encryption database by hand: no key, same schema.
+        {
+            let conn = Connection::open(&db).unwrap();
+            conn.execute_batch(SCHEMA).unwrap();
+            conn.execute(
+                "INSERT INTO items (kind, content, preview, created_at, last_used_at, \
+                 content_hash, size, namespace) \
+                 VALUES ('text', 'legacy row', 'legacy row', 1, 1, 'legacyhash', 10, 'default')",
+                [],
+            )
+            .unwrap();
+        }
+        assert!(
+            starts_with_sqlite_magic(&db),
+            "precondition: the hand-built database is plaintext"
+        );
+
+        std::env::set_var("CLIPBOARDER_DB_KEY", TEST_KEY);
+        let opened = Storage::open(&db);
+        std::env::remove_var("CLIPBOARDER_DB_KEY");
+        let storage = opened.expect("a plaintext database should migrate, not fail");
+
+        assert!(
+            !starts_with_sqlite_magic(&db),
+            "the database must be encrypted after migration"
+        );
+        let found: i64 = storage
+            .conn
+            .query_row(
+                "SELECT count(*) FROM items WHERE content = 'legacy row'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(found, 1, "the pre-existing row must survive migration");
+    }
+
+    #[test]
+    fn secure_delete_is_enabled() {
+        let _env = crate::testenv::lock();
+        let dir = scratch();
+        let db = dir.join("clipboarder.sqlite");
+        std::env::set_var("CLIPBOARDER_DB_KEY", TEST_KEY);
+        let storage = Storage::open(&db).expect("open");
+        std::env::remove_var("CLIPBOARDER_DB_KEY");
+
+        let mode: i64 = storage
+            .conn
+            .query_row("PRAGMA secure_delete", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            mode, 1,
+            "secure_delete must be ON so deleted rows are zeroed rather than \
+             left in the freelist"
+        );
+    }
+
+    #[test]
+    fn deleted_content_is_not_left_in_the_file() {
+        let _env = crate::testenv::lock();
+        let dir = scratch();
+        let db = dir.join("clipboarder.sqlite");
+        std::env::set_var("CLIPBOARDER_DB_KEY", TEST_KEY);
+        {
+            let mut s = Storage::open(&db).expect("open");
+            let (id, _) = s
+                .upsert(&item("AKIAIOSFODNN7EXAMPLE", "h1"), DEFAULT_NAMESPACE)
+                .unwrap();
+            s.delete(id, DEFAULT_NAMESPACE).unwrap();
+            s.conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);").unwrap();
+            s.vacuum().unwrap();
+        }
+        std::env::remove_var("CLIPBOARDER_DB_KEY");
+
+        for suffix in ["", "-wal", "-shm"] {
+            let p = sidecar(&db, suffix);
+            if !p.exists() {
+                continue;
+            }
+            let raw = std::fs::read(&p).unwrap();
+            assert!(
+                !raw.windows(20).any(|w| w == b"AKIAIOSFODNN7EXAMPLE"),
+                "deleted content must not remain in {}",
+                p.display()
+            );
+        }
+    }
 }

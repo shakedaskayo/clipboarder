@@ -51,6 +51,16 @@ struct Handler {
 
 impl Handler {
     fn process(&self) -> Result<()> {
+        // Respect the pasteboard's own "don't record me" marker first. This is
+        // the only signal that is actually attached to the copy itself —
+        // is_excluded() below infers the source from whichever app happens to
+        // be frontmost, which races anything that writes the pasteboard from
+        // the background.
+        if let Some(marker) = self.privacy_marker() {
+            eprintln!("clipboarder: skipping copy marked {marker}");
+            return Ok(());
+        }
+
         // Respect privacy exclusions: skip capture if the frontmost app is on
         // the list (e.g. 1Password). On non-macOS this is a no-op.
         if self.is_excluded() { return Ok(()); }
@@ -61,6 +71,19 @@ impl Handler {
         if ctx.has(ContentFormat::Text) {
             if let Ok(text) = ctx.get_text() {
                 if text.is_empty() { return Ok(()); }
+                // Never let a credential reach the database in the first
+                // place. Redaction at read time (the CLI's --no-secrets) only
+                // hides it from agents; the plaintext still sits on disk for
+                // as long as the row survives.
+                if !self.settings.get().store_secrets {
+                    if let Some(kind) = crate::secrets::detect(&text) {
+                        eprintln!(
+                            "clipboarder: not storing clipboard content that looks like a {}",
+                            kind.label()
+                        );
+                        return Ok(());
+                    }
+                }
                 let hash = hash_str(&text);
                 if self.is_dup(&hash) { return Ok(()); }
                 let cls = classify::classify_text(&text);
@@ -174,11 +197,25 @@ impl Handler {
     }
 
     #[cfg(target_os = "macos")]
+    fn privacy_marker(&self) -> Option<&'static str> {
+        crate::macos::pasteboard_privacy_marker()
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn privacy_marker(&self) -> Option<&'static str> { None }
+
+    #[cfg(target_os = "macos")]
     fn is_excluded(&self) -> bool {
-        let excluded = self.settings.get().excluded_apps;
-        if excluded.is_empty() { return false; }
+        let s = self.settings.get();
         let Some(bid) = crate::macos::frontmost_bundle_id() else { return false; };
-        excluded.iter().any(|e| e.eq_ignore_ascii_case(&bid))
+        if s.use_default_exclusions
+            && crate::settings::DEFAULT_EXCLUDED_APPS
+                .iter()
+                .any(|e| bid.eq_ignore_ascii_case(e))
+        {
+            return true;
+        }
+        s.excluded_apps.iter().any(|e| e.eq_ignore_ascii_case(&bid))
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -199,12 +236,22 @@ impl Handler {
         let s = self.settings.get();
         if s.max_items == 0 && s.auto_clear_days == 0 { return; }
         let mut db = self.storage.lock();
+        let mut stale = Vec::new();
         if s.max_items > 0 {
             if let Ok(paths) = db.enforce_limit(s.max_items, DEFAULT_NAMESPACE) {
-                drop(db);
-                for p in paths { let _ = std::fs::remove_file(p); }
+                stale.extend(paths);
             }
         }
+        // Age-based retention used to run only in `run()` at app launch, so on
+        // a machine that stays up for weeks it never fired at all. Enforce it
+        // on the same path as the count limit.
+        if s.auto_clear_days > 0 {
+            if let Ok(paths) = db.prune_older_than(s.auto_clear_days, DEFAULT_NAMESPACE) {
+                stale.extend(paths);
+            }
+        }
+        drop(db);
+        for p in stale { let _ = std::fs::remove_file(p); }
     }
 }
 

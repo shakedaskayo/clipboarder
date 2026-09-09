@@ -32,7 +32,10 @@ async-stream = "0.3"
 libc = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite = { version = "0.32", features = ["bundled"] }
+# bundled-sqlcipher-vendored-openssl builds SQLCipher and its OpenSSL from
+# source, so the encrypted database does not depend on whatever libcrypto
+# happens to be on the host. Costs build time; buys a reproducible binary.
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"] }
 clipboard-rs = "0.2"
 sha2 = "0.10"
 image = { version = "0.25", default-features = false, features = ["png"] }
@@ -47,6 +50,8 @@ tokio = { version = "1", features = ["sync", "rt", "macros", "time"] }
 clap = { version = "4", features = ["derive"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
+# Login-keychain storage for the SQLCipher key.
+security-framework = "3"
 core-graphics = "0.24"
 core-foundation = "0.10"
 cocoa = "0.26"

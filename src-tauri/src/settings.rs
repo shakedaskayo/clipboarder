@@ -19,8 +19,40 @@ pub struct Settings {
     /// Auto-delete non-pinned items older than this many days. 0 = never.
     pub auto_clear_days: u32,
     /// Bundle identifiers of apps whose clipboard activity we should ignore.
+    /// These are *added to* `DEFAULT_EXCLUDED_APPS` unless the user has
+    /// turned the built-in list off.
     pub excluded_apps: Vec<String>,
+    /// Apply the built-in password-manager exclusion list. On by default so a
+    /// fresh install does not archive vault entries; a user who genuinely
+    /// wants their password manager recorded can turn it off.
+    pub use_default_exclusions: bool,
+    /// Persist clipboard content that `secrets::detect` classifies as a
+    /// credential. Off by default: an API key that is never written to disk
+    /// cannot leak from it, and the cost of a false positive is one copy the
+    /// user has to make again.
+    pub store_secrets: bool,
 }
+
+/// Password managers and secret stores whose clipboard writes we skip.
+///
+/// This is a floor, not a preference. A clipboard manager that quietly
+/// archives everything copied out of a vault turns a locked vault into a
+/// plaintext file, so the list ships enabled and covers the mainstream
+/// macOS clients rather than waiting for each user to discover the setting.
+pub const DEFAULT_EXCLUDED_APPS: &[&str] = &[
+    "com.1password.1password",
+    "com.agilebits.onepassword",
+    "com.agilebits.onepassword7",
+    "com.agilebits.onepassword4",
+    "com.bitwarden.desktop",
+    "org.keepassxc.keepassxc",
+    "com.lastpass.LastPass",
+    "com.dashlane.Dashlane",
+    "in.sinew.Enpass-Desktop",
+    "app.strongbox.mac.strongbox",
+    "com.apple.keychainaccess",
+    "com.apple.Passwords",
+];
 
 impl Default for Settings {
     fn default() -> Self {
@@ -30,6 +62,8 @@ impl Default for Settings {
             max_items: 500,
             auto_clear_days: 0,
             excluded_apps: Vec::new(),
+            use_default_exclusions: true,
+            store_secrets: false,
         }
     }
 }

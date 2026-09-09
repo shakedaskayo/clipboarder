@@ -9,6 +9,11 @@
 
 set -euo pipefail
 
+# The database is SQLCipher-encrypted; supply the key explicitly so the suite
+# never depends on a login keychain, which on a CI runner may be locked or
+# absent. Any 64 hex characters will do — the DB is thrown away with TMPHOME.
+export CLIPBOARDER_DB_KEY=${CLIPBOARDER_DB_KEY:-00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff}
+
 CLI=${CLIPBOARDER_BIN:-"$(cd "$(dirname "$0")/.." && pwd)/src-tauri/target/release/clipboarder"}
 PORT=${PORT:-$(python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1]); s.close()")}
 BASE="http://127.0.0.1:$PORT"
@@ -232,15 +237,17 @@ section "image endpoint"
 # directly via SQLite. Insert one by hand so we can exercise GET …/image.
 IMG_PATH="$HOME/Library/Application Support/com.clipboarder.app/test.png"
 python3 -c 'import sys, base64; sys.stdout.buffer.write(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="))' > "$IMG_PATH"
-DB="$HOME/Library/Application Support/com.clipboarder.app/clipboarder.sqlite"
 SHA=$(shasum -a 256 "$IMG_PATH" | cut -d' ' -f1)
-SIZE=$(wc -c < "$IMG_PATH" | tr -d ' ')
-NOW=$(date +%s)000
-# `trusted_schema=ON` lets us touch items_fts via its INSERT trigger from a
-# sqlite3 CLI session (SQLite's default for unknown connections is OFF).
-sqlite3 "$DB" "PRAGMA trusted_schema=ON; INSERT INTO items (kind, content, preview, image_path, source_app, meta, content_hash, size, pinned, created_at, last_used_at, namespace) VALUES ('image', '[image]', '[image]', '$IMG_PATH', 'test', NULL, '$SHA', $SIZE, 0, $NOW, $NOW, 'alice');"
-IMG_ID=$(sqlite3 "$DB" "SELECT id FROM items WHERE image_path='$IMG_PATH' LIMIT 1;")
-assert "image item inserted via sqlite"     '[ -n "$IMG_ID" ]'
+# Seed the row through clipboarder itself rather than the system `sqlite3`.
+# Two reasons the old direct-SQL insert could not survive: the database is
+# SQLCipher-encrypted, so an external sqlite3 cannot open it at all; and even
+# unencrypted it needed an FTS5-enabled sqlite3 to parse the schema, which the
+# macOS CI runner does not ship (`Error: in prepare, no such module: fts5`).
+# CLIPBOARDER_NAMESPACE picks the namespace; with no SERVER/TOKEN set the CLI
+# uses the local backend, which is the same database the server has open.
+IMG_ID=$(CLIPBOARDER_NAMESPACE=alice "$CLI" add --image "$IMG_PATH" --source test --json \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+assert "image item inserted via the CLI"    '[ -n "$IMG_ID" ]'
 
 TMP_OUT=$(mktemp -t clipboarder-img.XXXXXX)
 HTTP_CODE=$(curl -s -o "$TMP_OUT" -w "%{http_code}" -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items/$IMG_ID/image")
