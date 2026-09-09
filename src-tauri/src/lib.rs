@@ -2,6 +2,24 @@ mod app_icons;
 pub mod classify;
 mod clipboard;
 mod commands;
+pub mod dbkey;
+
+/// Serializes tests that set process-wide environment variables.
+///
+/// `cargo test` runs the tests in one binary on multiple threads, so two
+/// tests that both drive `CLIPBOARDER_DB_KEY` will otherwise clobber each
+/// other non-deterministically. Every such test takes this lock first.
+#[cfg(test)]
+pub(crate) mod testenv {
+    use once_cell::sync::Lazy;
+    use parking_lot::{Mutex, MutexGuard};
+
+    static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+    pub fn lock() -> MutexGuard<'static, ()> {
+        LOCK.lock()
+    }
+}
 pub mod cli;
 mod paste;
 pub mod secrets;
@@ -17,6 +35,12 @@ mod macos;
 
 use std::str::FromStr;
 use std::sync::Arc;
+use std::thread;
+
+/// Our own bundle identifier. The frontmost app matching this is never a
+/// paste-back target — synthesizing ⌘V while we are frontmost types into our
+/// own webview.
+pub(crate) const SELF_BUNDLE_ID: &str = "com.clipboarder.app";
 
 use anyhow::{anyhow, Result};
 use parking_lot::Mutex;
@@ -48,6 +72,15 @@ pub struct AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Log panics from every thread instead of letting them disappear. A
+    // panic in a Tauri command thread or the clipboard watcher otherwise
+    // leaves the app running with the tray icon alive but the feature dead.
+    let default_panic = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        eprintln!("[clipboarder] PANIC: {info}");
+        default_panic(info);
+    }));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
@@ -109,6 +142,10 @@ pub fn run() {
                 images_dir.clone(),
             );
 
+            // Keep a live paste-back target, independent of how the overlay
+            // gets opened.
+            start_frontmost_tracker(app_handle.clone());
+
             // Register hotkey from settings
             let hotkey = settings_store.get().hotkey;
             register_hotkey(&app_handle, &hotkey)?;
@@ -117,7 +154,9 @@ pub fn run() {
             build_tray(&app_handle)?;
 
             // macOS panel-style window
-            let win = app.get_webview_window("main").unwrap();
+            let win = app
+                .get_webview_window("main")
+                .ok_or_else(|| anyhow!("main window not registered"))?;
             #[cfg(target_os = "macos")]
             macos::configure_window(&win);
 
@@ -245,55 +284,140 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 }
 
 fn toggle_window(app: &AppHandle) {
-    if let Some(win) = app.get_webview_window("main") {
-        match win.is_visible() {
-            Ok(true) => {
-                let _ = win.hide();
-            }
-            _ => {
-                capture_prev_frontmost(app);
-                let _ = win.center();
-                let _ = win.show();
-                let _ = win.set_focus();
-                let _ = app.emit("window:shown", ());
-            }
-        }
+    let Some(win) = app.get_webview_window("main") else { return; };
+    // is_visible() can disagree with what the user sees: [NSApp hide:],
+    // setHidesOnDeactivate, and Space transitions all leave NSWindow's
+    // visibility flag in states that don't match the user's perception.
+    // Only treat the window as "should hide" if it is *both* visible and
+    // clipboarder is the frontmost app — otherwise the hotkey should
+    // summon the window back, not silently hide an already-hidden one.
+    let visible = win.is_visible().unwrap_or(false);
+    let should_hide = visible && is_clipboarder_frontmost();
+    if should_hide {
+        let _ = win.hide();
+    } else {
+        show_window(app);
     }
 }
 
 fn show_window(app: &AppHandle) {
-    if let Some(win) = app.get_webview_window("main") {
-        capture_prev_frontmost(app);
-        let _ = win.center();
-        let _ = win.show();
-        let _ = win.set_focus();
-        let _ = app.emit("window:shown", ());
-    }
+    let Some(win) = app.get_webview_window("main") else { return; };
+    capture_prev_frontmost(app);
+    let _ = win.center();
+    let _ = win.show();
+    let _ = win.set_focus();
+    // set_focus() calls makeKeyAndOrderFront: but does not always activate
+    // the *application* on macOS 15 when the window is floating +
+    // hidesOnDeactivate — keystrokes can still go to the previously-active
+    // app. Explicitly activate to guarantee focus lands here.
+    #[cfg(target_os = "macos")]
+    macos::activate_self();
+    let _ = app.emit("window:shown", ());
 }
+
+#[cfg(target_os = "macos")]
+fn is_clipboarder_frontmost() -> bool {
+    macos::frontmost_bundle_id().as_deref() == Some(SELF_BUNDLE_ID)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_clipboarder_frontmost() -> bool { true }
+
+/// Decide whether a sampled frontmost app should become the paste-back target.
+///
+/// Split out from the ObjC call so the rule is testable: record a real pid for
+/// any app that is not us, and record nothing otherwise — in particular never
+/// overwrite a good target with `None` just because we are currently frontmost.
+pub(crate) fn paste_target(bundle_id: Option<&str>, pid: Option<i32>) -> Option<i32> {
+    if bundle_id == Some(SELF_BUNDLE_ID) {
+        return None;
+    }
+    pid.filter(|p| *p > 0)
+}
+
+/// Continuously track which app the user was last in, so paste-back always has
+/// a target.
+///
+/// `capture_prev_frontmost` alone is not enough. It samples at the moment the
+/// overlay opens and deliberately declines to record when clipboarder is
+/// already frontmost — but opening the window from the tray *activates
+/// clipboarder first*, so by the time it runs we are frontmost and it records
+/// nothing. The snapshot then stays `None` (fresh launch: ⌘V went into our own
+/// webview) or keeps a stale pid from two activations ago.
+///
+/// Sampling on a timer instead means the target is whatever app the user was
+/// actually in, no matter how the overlay was summoned. 250 ms is far below
+/// the time it takes a human to switch apps and pick an item, and reads one
+/// AppKit property.
+#[cfg(target_os = "macos")]
+fn start_frontmost_tracker(app: AppHandle) {
+    thread::Builder::new()
+        .name("clipboarder-frontmost".into())
+        .spawn(move || loop {
+            thread::sleep(std::time::Duration::from_millis(250));
+            let (bundle_id, pid) = macos::frontmost_app();
+            if let Some(pid) = paste_target(bundle_id.as_deref(), pid) {
+                if let Some(state) = app.try_state::<AppState>() {
+                    *state.prev_frontmost_pid.lock() = Some(pid);
+                }
+            }
+        })
+        .expect("spawn frontmost tracker thread");
+}
+
+#[cfg(not(target_os = "macos"))]
+fn start_frontmost_tracker(_app: AppHandle) {}
 
 /// Snapshot the PID of the frontmost app *before* we activate clipboarder,
 /// so paste-back has something concrete to re-activate. Skipped if the
-/// frontmost is already clipboarder itself (e.g. the user re-presses the
-/// hotkey while the overlay is up) — overwriting in that case would lose
-/// the original target.
+/// frontmost is already clipboarder itself (re-press the hotkey while the
+/// overlay is up) — overwriting in that case would lose the original target.
+/// The tracker above covers the paths where this declines to record.
 fn capture_prev_frontmost(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
-        let pid = macos::frontmost_pid();
-        let self_bid = macos::frontmost_bundle_id();
-        let is_self = self_bid.as_deref() == Some("com.clipboarder.app");
-        if let Some(state) = app.try_state::<AppState>() {
-            let mut slot = state.prev_frontmost_pid.lock();
-            if !is_self {
-                eprintln!("[paste] captured prev frontmost pid={pid:?} bid={self_bid:?}");
-                *slot = pid;
-            } else {
-                eprintln!("[paste] skip capture — frontmost is already clipboarder");
-            }
-        }
+        let is_self = macos::frontmost_bundle_id().as_deref()
+            == Some(SELF_BUNDLE_ID);
+        if is_self { return; }
+        let Some(state) = app.try_state::<AppState>() else { return; };
+        *state.prev_frontmost_pid.lock() = macos::frontmost_pid();
     }
     #[cfg(not(target_os = "macos"))]
     {
         let _ = app;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tracks_a_normal_app() {
+        assert_eq!(paste_target(Some("com.apple.Safari"), Some(412)), Some(412));
+    }
+
+    #[test]
+    fn never_targets_clipboarder_itself() {
+        assert_eq!(
+            paste_target(Some(SELF_BUNDLE_ID), Some(412)),
+            None,
+            "pasting while we are frontmost types into our own webview"
+        );
+    }
+
+    #[test]
+    fn ignores_missing_or_bogus_pids() {
+        assert_eq!(paste_target(Some("com.apple.Safari"), None), None);
+        assert_eq!(paste_target(Some("com.apple.Safari"), Some(0)), None);
+        assert_eq!(paste_target(Some("com.apple.Safari"), Some(-1)), None);
+    }
+
+    #[test]
+    fn tracks_an_app_with_no_bundle_id() {
+        // A bare executable has no bundle identifier but is still a valid
+        // paste target — dropping it would strand users of terminal-launched
+        // apps with whatever pid happened to be recorded before.
+        assert_eq!(paste_target(None, Some(77)), Some(77));
     }
 }

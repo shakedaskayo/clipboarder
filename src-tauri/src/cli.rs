@@ -146,6 +146,10 @@ pub enum Command {
         /// Tag where it came from (shown in the row meta).
         #[arg(long)]
         source: Option<String>,
+        /// Record an image file that already exists on disk, instead of text.
+        /// Local backend only — a path is meaningless to a remote server.
+        #[arg(long, value_name = "PATH")]
+        image: Option<String>,
         /// Print the new row id (default: silent on success).
         #[arg(long)]
         json: bool,
@@ -352,8 +356,8 @@ pub fn run() -> Result<()> {
             cmd_search(&*store, &query, limit, kind, json, &agent)
         }
         Command::Show { id, json } => cmd_show(&*store, id, json),
-        Command::Add { text, kind, copy, source, json } => {
-            cmd_add(&*store, text, kind, copy, source, json)
+        Command::Add { text, kind, copy, source, image, json } => {
+            cmd_add(&*store, text, kind, copy, source, image, json)
         }
         Command::Pin { id } => cmd_set_pin(&*store, id, true),
         Command::Unpin { id } => cmd_set_pin(&*store, id, false),
@@ -363,7 +367,7 @@ pub fn run() -> Result<()> {
         Command::Stats { json } => cmd_stats(&*store, json),
         Command::Watch { kind } => cmd_watch(&*store, kind),
         Command::Cp { kind, source, no_clipboard, json } => {
-            cmd_add(&*store, None, kind, !no_clipboard, Some(source), json)
+            cmd_add(&*store, None, kind, !no_clipboard, Some(source), None, json)
         }
         Command::P { n, kind, grep, copy, all, json, agent } => {
             cmd_paste(&*store, n, kind, grep, copy, all, json, &agent)
@@ -763,8 +767,28 @@ fn cmd_add(
     kind_override: Option<String>,
     also_copy: bool,
     source: Option<String>,
+    image: Option<String>,
     json: bool,
 ) -> Result<()> {
+    // An image row carries its bytes on disk, not in `content`, so it skips
+    // the stdin/empty-body handling entirely.
+    if let Some(path) = image {
+        let reply = store.upsert(&UpsertRequest {
+            content: String::new(),
+            kind: None,
+            meta: None,
+            source_app: source,
+            image_path: Some(path),
+        })?;
+        if json {
+            println!(
+                "{}",
+                serde_json::json!({"id": reply.id, "inserted": reply.inserted, "kind": reply.kind})
+            );
+        }
+        return Ok(());
+    }
+
     let body = match text {
         Some(t) => t,
         None => {
@@ -783,6 +807,7 @@ fn cmd_add(
         kind: kind_override,
         meta: None,
         source_app: source,
+        image_path: None,
     })?;
 
     if also_copy {
