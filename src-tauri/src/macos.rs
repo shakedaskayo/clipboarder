@@ -246,3 +246,38 @@ pub fn pasteboard_privacy_marker() -> Option<&'static str> {
     }
     None
 }
+
+/// Reads the frontmost application once and returns `(bundle id, pid)`.
+///
+/// Separate from `frontmost_pid()` + `frontmost_bundle_id()` on purpose:
+/// calling those back to back asks AppKit twice, and the user can switch apps
+/// between the two calls, which yields one app's bundle id paired with
+/// another's pid. Paste-back aims a synthesized ⌘V at whatever pid it is
+/// handed, so that mismatch would type into the wrong window.
+pub fn frontmost_app() -> (Option<String>, Option<i32>) {
+    unsafe {
+        let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        if workspace == nil {
+            return (None, None);
+        }
+        let app: id = msg_send![workspace, frontmostApplication];
+        if app == nil {
+            return (None, None);
+        }
+
+        let bundle: id = msg_send![app, bundleIdentifier];
+        let bundle_id = if bundle == nil {
+            None
+        } else {
+            let utf8: *const std::os::raw::c_char = msg_send![bundle, UTF8String];
+            if utf8.is_null() {
+                None
+            } else {
+                Some(std::ffi::CStr::from_ptr(utf8).to_string_lossy().into_owned())
+            }
+        };
+
+        let pid: i32 = msg_send![app, processIdentifier];
+        (bundle_id, if pid > 0 { Some(pid) } else { None })
+    }
+}

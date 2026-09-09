@@ -73,7 +73,7 @@ pub fn paste_item(app: AppHandle, state: State<AppState>, id: i64) -> CmdResult<
             // synthesizing ⌘V would paste into our own webview. The
             // clipboard content is already set, so the user can ⌘V into
             // any app manually.
-            if crate::macos::frontmost_bundle_id().as_deref() == Some("com.clipboarder.app") {
+            if crate::macos::frontmost_bundle_id().as_deref() == Some(crate::SELF_BUNDLE_ID) {
                 eprintln!("[clipboarder] skipping paste-back: no prev_pid, clipboarder still frontmost");
                 return Ok(());
             }
