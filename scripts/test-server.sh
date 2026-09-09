@@ -10,7 +10,7 @@
 set -euo pipefail
 
 CLI=${CLIPBOARDER_BIN:-"$(cd "$(dirname "$0")/.." && pwd)/src-tauri/target/release/clipboarder"}
-PORT=${PORT:-7489}
+PORT=${PORT:-$(python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1]); s.close()")}
 BASE="http://127.0.0.1:$PORT"
 
 TMPHOME=$(mktemp -d -t clipboarder-srv.XXXXXX)
@@ -48,7 +48,15 @@ assert "config stores argon2 hash, not plaintext" \
 section "boot"
 "$CLI" serve --bind "127.0.0.1:$PORT" > /tmp/clipd-srv.log 2>&1 &
 SRV_PID=$!
-sleep 1.0
+# Poll for readiness rather than guessing. A cold CI runner can take several
+# seconds to bind, and a fixed sleep turns that into a spurious failure.
+boot_ok=""
+for _ in $(seq 1 100); do
+  if curl -fsS -m 2 "$BASE/v1/health" 2>/dev/null | grep -q ok; then boot_ok="yes"; break; fi
+  kill -0 "$SRV_PID" 2>/dev/null || break
+  sleep 0.2
+done
+assert "server booted within 20s"     '[ "$boot_ok" = "yes" ]'
 assert "server PID alive"             'kill -0 "$SRV_PID"'
 assert "server listening on $PORT"    'curl -fsS -m 2 "$BASE/v1/health" | grep -q ok'
 
@@ -149,12 +157,18 @@ section "transparent CLI watch (SSE consumption)"
 WATCH_OUT=$(mktemp -t clipboarder-watch.XXXXXX)
 RUN_REMOTE watch > "$WATCH_OUT" 2>/dev/null &
 WATCH_PID=$!
-# Give SSE a beat to connect + send the initial `ready` event.
-sleep 0.6
+# Give SSE a beat to connect + send the initial `ready` event. Poll for the
+# stream to be live rather than assuming it connected inside a fixed window.
+for _ in $(seq 1 50); do [ -s "$WATCH_OUT" ] && break; sleep 0.1; done
+sleep 0.3
 echo "sse smoke test — $(date +%s%N)" | RUN_REMOTE add --json --source claude > /dev/null
 echo "sse second event"               | RUN_REMOTE add --json --source claude > /dev/null
-# SSE delivery is sub-100 ms in practice; allow a generous wait for CI.
-sleep 0.8
+# SSE delivery is sub-100 ms in practice, but a loaded CI runner is not. Wait
+# for both events to land (up to 10s) instead of a fixed 0.8s gamble.
+for _ in $(seq 1 100); do
+  [ "$(grep -c "sse " "$WATCH_OUT" 2>/dev/null || echo 0)" -ge 2 ] && break
+  sleep 0.1
+done
 kill "$WATCH_PID" 2>/dev/null || true
 wait "$WATCH_PID" 2>/dev/null || true
 assert "watch received SSE smoke item" \
@@ -264,9 +278,15 @@ assert "alice's token still works after bob revoked" \
 section "last_used_at"
 # Provoke a fresh auth on alice's token; the touch should bubble to disk.
 curl -s -H "Authorization: Bearer $TOKEN_ALICE" "$BASE/v1/items?limit=1" >/dev/null
-sleep 0.2
-assert "alice's entry has a last_used_at timestamp" \
-  'grep -A6 "namespace = \"alice\"" "$HOME/Library/Application Support/com.clipboarder.app/server.toml" | grep -q "last_used_at"'
+# The touch is flushed to disk asynchronously; poll rather than sleep once.
+lua_ok=""
+for _ in $(seq 1 50); do
+  if grep -A6 'namespace = "alice"' "$HOME/Library/Application Support/com.clipboarder.app/server.toml" | grep -q "last_used_at"; then
+    lua_ok="yes"; break
+  fi
+  sleep 0.1
+done
+assert "alice's entry has a last_used_at timestamp" '[ "$lua_ok" = "yes" ]'
 
 echo
 total=$((pass+fail))
